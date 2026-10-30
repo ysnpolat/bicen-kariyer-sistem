@@ -138,6 +138,7 @@ import {
 } from "./api";
 import { RENK } from "./sabitler";
 import Yenilikler from "./Yenilikler";
+import IkTalepUyarisi from "./IkTalepUyarisi";
 import Talep from "./Talep";
 import Talepler from "./Talepler";
 import { okunmamisSayisi, gorunenYenilikler } from "./yenilikListesi";
@@ -1506,6 +1507,10 @@ export default function App() {
 
         {/* Yeni mesajda ses ve sağ alttaki bildirim kartı; tüm ekranlarda */}
         {!yalnizcaFotograf(oturum) && <MesajBildirim sayfa={sekme} />}
+
+        {/* Sırası İK'ya gelen personel talepleri: sesli kart (30.10.2026).
+            Sunucu yalnızca İK rollerinde dolu döner. */}
+        {!yalnizcaFotograf(oturum) && <IkTalepUyarisi />}
 
         {/* Yenilikler: girişte okunmamış varsa "yeni" kipinde kendiliğinden,
             menüdeki düğmeden "hepsi" kipinde (30.10.2026) */}

@@ -109,7 +109,6 @@ const gorselAdresi = (id: number) =>
 /* ========================================================================== */
 
 export default function KazanKazan({ sekme: ilk = "oneri" }: { sekme?: "oneri" | "havuz" }) {
-  const [panelOneriAcik, setPanelOneriAcik] = useState(false);
   const [sekme, setSekme] = useState<"oneri" | "havuz">(ilk);
 
   return (
@@ -144,6 +143,7 @@ export default function KazanKazan({ sekme: ilk = "oneri" }: { sekme?: "oneri" |
 /* ========================================================================== */
 
 function Oneriler() {
+  const [panelOneriAcik, setPanelOneriAcik] = useState(false);
   const { message } = AntdApp.useApp();
   const [liste, setListe] = useState<Oneri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(false);

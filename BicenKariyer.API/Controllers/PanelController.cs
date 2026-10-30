@@ -275,6 +275,119 @@ WHERE gorusme_tarihi >= @bugun AND gorusme_tarihi < @yarin
         });
     }
 
+    /// <summary>
+    /// Sırası İK'da olan personel talepleri, tek tek (30.10.2026).
+    ///
+    /// <para>
+    /// Panel bu listeyi dakikada bir okur; daha önce görmediği bir anahtar
+    /// gelince ekranın sağ altında sesli bir kart açar ("onayınızı bekleyen
+    /// yeni talep"). Yalnızca İK Uzmanı / İK Yöneticisi (ve onları temel alan
+    /// roller) için dolu döner; kapsam uzmanın kendi şubeleridir, Bekleyen
+    /// işler çekmecesindeki sayılarla aynı kural.
+    /// </para>
+    /// </summary>
+    [HttpGet("IkSiradakiTalepler")]
+    public IActionResult IkSiradakiTalepler()
+    {
+        var rol = Rol;
+        var temel = Roller.Temel(rol);
+        if (temel is not (Roller.IK or Roller.IKYoneticisi))
+            return Ok(new { aktif = false, talepler = Array.Empty<object>() });
+
+        using var db = _vt.Baglanti();
+        var kapsam = UzmanKapsami.Olustur(db, _ayar, rol, Kullanici, null);
+        bool Icinde(string sube) => kapsam is null || kapsam.Icinde(sube);
+
+        var liste = new List<(string anahtar, string tur, string sekme, string adSoyad, string sube, string ozet, DateTime? zaman)>();
+
+        void Ekle(Action a)
+        {
+            try { a(); }
+            catch (Exception h) { _kayit.LogDebug(h, "İK sıradaki talepler okunamadı"); }
+        }
+
+        var tr = new System.Globalization.CultureInfo("tr-TR");
+
+        if (_yetki.MenuAcik(rol, "izintalep"))
+            Ekle(() =>
+            {
+                foreach (var t in db.Query(@"
+SELECT id, ad_soyad AS adSoyad, sube_adi AS sube, tur, gun, saat, cikis_tarihi AS cikis,
+       COALESCE(bolge_tarih, magaza_tarih, olusturma) AS zaman
+FROM KRY_IZIN_TALEP WHERE iptal = 0 AND durum = @d", new { d = IzinBolgeOnayli }))
+                {
+                    if (!Icinde((string)t.sube)) continue;
+                    var sure = t.saat is not null && (decimal)t.saat > 0
+                        ? $"{((decimal)t.saat).ToString("0.##", tr)} saat"
+                        : $"{((decimal)t.gun).ToString("0.#", tr)} gün";
+                    var cikis = t.cikis is null ? "" : $" · {((DateTime)t.cikis):dd.MM}";
+                    liste.Add(($"izin:{t.id}", "İzin", "izin", (string)t.adSoyad, (string)t.sube,
+                        $"{t.tur} · {sure}{cikis}", (DateTime?)t.zaman));
+                }
+            });
+
+        Ekle(() =>
+        {
+            var akis = AvansAkisi.Gecerli();
+            var adimlar = akis.Adimlar.Select((x, i) => (x, i)).Where(t => AvansAkisi.PanelYetkili(t.x, temel)).Select(t => t.i).ToList();
+            if (adimlar.Count == 0) return;
+            foreach (var t in db.Query(@"
+SELECT id, ad_soyad AS adSoyad, sube, tutar, ISNULL(guncelleme, olusturma) AS zaman
+FROM KRY_AVANS WHERE durum = N'bekliyor' AND ISNULL(asama, 0) IN @a", new { a = adimlar }))
+            {
+                if (!Icinde((string)t.sube)) continue;
+                liste.Add(($"avans:{t.id}", "Avans", "avans", (string)t.adSoyad, (string)t.sube,
+                    $"{((decimal)t.tutar).ToString("N0", tr)} ₺", (DateTime?)t.zaman));
+            }
+        });
+
+        Ekle(() =>
+        {
+            foreach (var t in db.Query(@"
+SELECT id, ad_soyad AS adSoyad, sube, tarih, sure_dk AS dk
+FROM KRY_FAZLA_MESAI WHERE durum = N'bekliyor'"))
+            {
+                if (!Icinde((string)t.sube)) continue;
+                int dk = t.dk is null ? 0 : Convert.ToInt32((object)t.dk);
+                var sure = dk >= 60 ? $"{dk / 60} sa{(dk % 60 > 0 ? $" {dk % 60} dk" : "")}" : $"{dk} dk";
+                liste.Add(($"fazlamesai:{t.id}", "Fazla mesai", "fazlamesai", (string)t.adSoyad, (string)t.sube,
+                    $"{((DateTime)t.tarih):dd.MM} · {sure}", (DateTime?)t.tarih));
+            }
+        });
+
+        Ekle(() =>
+        {
+            foreach (var t in db.Query(@"
+SELECT id, ad_soyad AS adSoyad, sube, bolge_tarih AS zaman
+FROM KRY_ROTASYON_TALEP WHERE durum = N'ik'"))
+            {
+                if (!Icinde((string)t.sube)) continue;
+                liste.Add(($"rotasyon:{t.id}", "Rotasyon", "rotasyon", (string)t.adSoyad, (string)t.sube,
+                    "Şube değişikliği", (DateTime?)t.zaman));
+            }
+        });
+
+        Ekle(() =>
+        {
+            foreach (var t in db.Query(@"
+SELECT id, ad_soyad AS adSoyad, sube_adi AS sube, tarih, tur, olusturma AS zaman
+FROM KRY_VARDIYA_ITIRAZ WHERE iptal = 0 AND durum = N'Bekliyor'"))
+            {
+                if (!Icinde((string)t.sube)) continue;
+                liste.Add(($"itiraz:{t.id}", "Vardiya düzeltme", "itiraz", (string)t.adSoyad, (string)t.sube,
+                    $"{t.tur} · {((DateTime)t.tarih):dd.MM}", (DateTime?)t.zaman));
+            }
+        });
+
+        return Ok(new
+        {
+            aktif = true,
+            talepler = liste
+                .OrderByDescending(x => x.zaman)
+                .Select(x => new { x.anahtar, x.tur, x.sekme, x.adSoyad, x.sube, x.ozet, x.zaman })
+        });
+    }
+
     private static string[] AsamaDurumlari(string rol) => rol switch
     {
         Roller.Admin or Roller.GenelMudurYardimcisi =>
