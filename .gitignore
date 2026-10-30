@@ -6,3 +6,4 @@ obj/
 *.user
 .expo/
 *.log
+*.tsbuildinfo
