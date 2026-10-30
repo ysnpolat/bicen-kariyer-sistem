@@ -104,6 +104,45 @@ FROM STOKLAR WITH (NOLOCK) WHERE sto_kod = @barkod", new { barkod }, commandTime
         return k is null ? (false, null, null) : (true, (string)k.kod, (string)k.ad);
     }
 
+    /// <summary>
+    /// Bizde satış görmemiş sayılma eşiği (gün). Ürün Mikro'da kayıtlı olsa
+    /// bile bu süredir satılmamışsa yeniden önerilebilir (30.10.2026).
+    /// </summary>
+    public const int SatisGormemeGunu = 400;
+
+    /// <summary>
+    /// Stok kodunun son satış tarihi (müşteriye satış: tip 1, cins 0-1,
+    /// evrak 1/4, iade değil). Hiç satılmamışsa null.
+    /// </summary>
+    public DateTime? SonSatisTarihi(string stokKodu)
+    {
+        if (string.IsNullOrWhiteSpace(stokKodu)) return null;
+
+        using var mikro = _vt.CiroBaglantisi();
+        return mikro.ExecuteScalar<DateTime?>(@"
+SELECT MAX(h.sth_tarih)
+FROM STOK_HAREKETLERI h WITH (NOLOCK)
+WHERE h.sth_stok_kod = @stok
+  AND h.sth_tip = 1 AND h.sth_cins IN (0,1)
+  AND h.sth_normal_iade = 0 AND h.sth_evraktip IN (1,4)", new { stok = stokKodu.Trim() }, commandTimeout: 120);
+    }
+
+    /// <summary>
+    /// Barkod önerilebilir mi: Mikro'da yoksa ya da kayıtlı olup
+    /// <see cref="SatisGormemeGunu"/> gündür satılmamışsa evet.
+    /// </summary>
+    public (bool Uygun, bool Mikroda, string StokKodu, string Ad, DateTime? SonSatis) Onerilebilir(string barkod)
+    {
+        var m = MikrodaAra(barkod);
+        if (!m.Var) return (true, false, null, null, null);
+
+        var son = SonSatisTarihi(m.StokKodu);
+        var esik = DateTime.Today.AddDays(-SatisGormemeGunu);
+        var uygun = son is null || son.Value.Date < esik;
+
+        return (uygun, true, m.StokKodu, m.Ad, son);
+    }
+
     /* ------------------------------------------------------------------ ölçüm */
 
     public sealed record OlcumSonucu(int Kod, string Hata, int Sira = 0, int UrunSayisi = 0, decimal Miktar = 0,

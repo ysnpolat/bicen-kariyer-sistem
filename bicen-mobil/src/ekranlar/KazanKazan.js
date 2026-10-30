@@ -511,14 +511,14 @@ function FormGorunum({ kisi, gonderildi }) {
                     ]}
                   >
                     {uygun
-                      ? "Bu ürün mağazalarımızda yok, önerebilirsiniz."
+                      ? denetim.mesaj || "Bu ürün mağazalarımızda yok, önerebilirsiniz."
                       : denetim.durum === "mevcut"
                         ? "Bu ürün zaten mağazalarımızda satılıyor."
                         : denetim.durum === "onerilmis"
                           ? `Bu ürün ${tarihYaz(denetim.tarih)} tarihinde önerildi.`
                           : denetim.mesaj || "Barkod kontrol edilemedi."}
                   </Text>
-                  {denetim.urunAdi && denetim.durum === "mevcut" ? (
+                  {denetim.urunAdi && (denetim.durum === "mevcut" || denetim.eskiUrun) ? (
                     <Text style={s.denetimAlt}>{denetim.urunAdi}</Text>
                   ) : denetim.durum === "onerilmis" ? (
                     <Text style={s.denetimAlt}>Son 1 ay içinde önerilen ürün tekrar önerilemez; {tarihYaz(denetim.tekrarTarihi)} sonrası önerilebilir.</Text>

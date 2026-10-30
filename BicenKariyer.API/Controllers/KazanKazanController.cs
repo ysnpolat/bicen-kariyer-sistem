@@ -13,7 +13,8 @@ namespace BicenKariyer.API.Controllers;
 /// İlk aktivite "Yeni Ürün Önerisi": çalışan Biçen360'tan marketlerde
 /// bulunmayan bir ürünü önerir (ürün adı, barkod, neden, görsel). Ad soyad
 /// ve şube oturumdan gelir. Barkod Mikro'da (BARKOD_TANIMLARI / STOKLAR)
-/// varsa ya da son 1 ay içinde önerilmişse öneri kabul edilmez.
+/// varsa ve son 400 günde satılmışsa, ya da son 1 ay içinde önerilmişse
+/// öneri kabul edilmez; 400 gündür satılmayan kayıtlı ürün önerilebilir.
 /// </para>
 ///
 /// <para>
@@ -212,8 +213,22 @@ FROM KRY_KK_ONERI WHERE personel_kodu = @kod ORDER BY olusturma DESC",
 
         try
         {
-            var m = MikrodaAra(b);
-            if (m.Var) return Ok(new { durum = "mevcut", urunAdi = m.Ad });
+            /* Mikro'da kayıtlı ama 400 gündür satılmayan ürün de önerilebilir
+               (30.10.2026): eski ürün rafa dönebilir. */
+            var m = _kk.Onerilebilir(b);
+            if (!m.Uygun)
+                return Ok(new { durum = "mevcut", urunAdi = m.Ad, sonSatis = m.SonSatis });
+            if (m.Mikroda)
+                return Ok(new
+                {
+                    durum = "uygun",
+                    eskiUrun = true,
+                    urunAdi = m.Ad,
+                    sonSatis = m.SonSatis,
+                    mesaj = m.SonSatis is null
+                        ? "Bu ürün kayıtlı ama hiç satılmamış, önerebilirsiniz."
+                        : $"Bu ürün {m.SonSatis:dd.MM.yyyy} tarihinden beri satılmıyor, önerebilirsiniz."
+                });
         }
         catch (Exception hata)
         {
@@ -250,9 +265,13 @@ FROM KRY_KK_ONERI WHERE personel_kodu = @kod ORDER BY olusturma DESC",
         if (SonOneri(db, b) is DateTime son)
             return BadRequest(new { hata = $"Bu ürün {son:dd.MM.yyyy} tarihinde önerildi; son 1 ay içinde önerilen ürün tekrar önerilemez." });
 
+        string stokKodu = null;
         try
         {
-            if (MikrodaAra(b).Var) return BadRequest(new { hata = "Bu ürün zaten mağazalarımızda satılıyor." });
+            var m = _kk.Onerilebilir(b);
+            if (!m.Uygun) return BadRequest(new { hata = "Bu ürün zaten mağazalarımızda satılıyor." });
+            /* 400 gündür satılmayan kayıtlı ürün: stok kodu ölçüm için şimdiden yazılır */
+            if (m.Mikroda) stokKodu = m.StokKodu;
         }
         catch (Exception hata)
         {
@@ -268,13 +287,13 @@ FROM KRY_KK_ONERI WHERE personel_kodu = @kod ORDER BY olusturma DESC",
             await dosya.CopyToAsync(akis);
 
         var id = db.ExecuteScalar<int>(@"
-INSERT INTO KRY_KK_ONERI (aktivite, personel_kodu, ad_soyad, sube_adi, pozisyon, urun_adi, barkod, neden, gorsel)
+INSERT INTO KRY_KK_ONERI (aktivite, personel_kodu, ad_soyad, sube_adi, pozisyon, urun_adi, barkod, neden, gorsel, stok_kodu)
 OUTPUT INSERTED.id
-VALUES (N'yeniurun', @kod, @adSoyad, @sube, @pozisyon, @ad, @b, @n, @dosyaAdi)",
+VALUES (N'yeniurun', @kod, @adSoyad, @sube, @pozisyon, @ad, @b, @n, @dosyaAdi, @stokKodu)",
             new
             {
                 kod = p.PersonelKodu.Trim(), adSoyad = $"{p.Ad} {p.Soyad}".Trim(), sube = p.IsGrubu, pozisyon = p.Pozisyon,
-                ad, b, n, dosyaAdi,
+                ad, b, n, dosyaAdi, stokKodu,
             });
 
         Hareket(db, id, null, "degerlendiriliyor", "Öneri Biçen360'tan gönderildi", p.PersonelKodu.Trim(), "mobil");
