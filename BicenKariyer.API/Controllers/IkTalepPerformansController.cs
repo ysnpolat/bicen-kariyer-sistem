@@ -83,10 +83,11 @@ SELECT kullanici_adi AS KullaniciAdi, ad_soyad AS AdSoyad, rol AS Rol, unvan AS 
 FROM KRY_KULLANICILAR
 WHERE aktif = 1 AND id <> 1").ToList();
 
-        /* Yalnızca aktif İK uzmanı ve İK yöneticisi (panelden açılan ve bu
-           rolleri temel alan özel roller dahil); Admin ve GMY listelenmez. */
+        /* Yalnızca aktif ve rolü tam olarak İK Uzmanı ya da İK Yöneticisi
+           olanlar (30.10.2026). Bu rolleri temel alan özel roller (ör.
+           Yönetim Kurulu Asistanı) listelenmez; Admin ve GMY de. */
         kisiler = kisiler
-            .Where(k => Roller.Temel(k.Rol) is Roller.IK or Roller.IKYoneticisi)
+            .Where(k => k.Rol is Roller.IK or Roller.IKYoneticisi)
             .ToList();
 
         var harita = new Dictionary<string, Kisi>();

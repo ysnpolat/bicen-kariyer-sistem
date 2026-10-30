@@ -5,4 +5,4 @@
  * ki "hangi sürümde oldu" sorusu cevaplanabilsin. Önceki zip adlarındaki
  * numarayla (bicen-kariyer-sistem-vNNNN) aynı sayaç.
  */
-export const SURUM = "1158";
+export const SURUM = "1159";

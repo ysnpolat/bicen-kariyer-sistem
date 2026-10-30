@@ -884,14 +884,11 @@ ORDER BY b.ise_giris_tarihi DESC",
 
         using var db = _vt.Baglanti();
 
-        /* Yalnızca aktif İK uzmanı ve İK yöneticisi değerlendirilir (panelden
-           açılan ve bu rolleri temel alan özel roller dahil). Admin, GMY ve
-           ayrılmış (pasif) kullanıcılar ne listede yer alır ne de özet
-           sayılara ve genel tepki süresine katılır. */
-        var ikRolleri = Roller.Tumu
-            .Where(r => Roller.Temel(r) is Roller.IK or Roller.IKYoneticisi)
-            .Distinct()
-            .ToArray();
+        /* Yalnızca aktif ve rolü tam olarak İK Uzmanı ya da İK Yöneticisi
+           olanlar değerlendirilir (30.10.2026). Bu rolleri temel alan özel
+           roller, Admin, GMY ve ayrılmış (pasif) kullanıcılar ne listede yer
+           alır ne de özet sayılara ve genel tepki süresine katılır. */
+        var ikRolleri = new[] { Roller.IK, Roller.IKYoneticisi };
         var p = new { bas = baslangic, bit = bitis, roller = ikRolleri };
 
         var satirlar = db.Query<PerformansSatiri>(@"
