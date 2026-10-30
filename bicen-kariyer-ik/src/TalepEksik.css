@@ -1,0 +1,131 @@
+/* Talep eksik bildirimi (07.10.2026) */
+
+.te-rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.te-turuncu { background: #fff4e6; color: #9a3412; }
+.te-kirmizi { background: #fef3f2; color: #b42318; }
+.te-mavi { background: #e7f0fb; color: #1e4f8a; }
+
+.te-rozet-dugme {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.te-rozet-dugme:hover .te-rozet { filter: brightness(0.96); box-shadow: 0 0 0 1px currentColor inset; }
+
+.it-dg.te-dugme { color: #9a3412; }
+.it-dg.te-dugme:hover { border-color: #f0b38a; background: #fff8f1; }
+
+.it-dg.te-gonder { background: #4d7a0c; border-color: #4d7a0c; color: #fff; font-weight: 600; }
+.it-dg.te-gonder:hover { background: #3f6108; border-color: #3f6108; }
+.it-dg.te-gonder:disabled { background: #a3b88a; border-color: #a3b88a; }
+
+.te-bas { display: flex; flex-direction: column; gap: 2px; }
+.te-bas small { font-weight: 400; color: var(--metin-pasif, #6b7280); font-size: 12.5px; }
+
+.te-govde {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 22px;
+}
+.te-sol, .te-sag { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.te-alt {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cizgi, #e3e6e1);
+  flex-wrap: wrap;
+}
+.te-et { font-size: 12.5px; font-weight: 600; margin-top: 6px; }
+
+.te-maddeler { display: flex; flex-direction: column; gap: 5px; }
+.te-maddeler label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 11px;
+  border: 1px solid var(--cizgi, #e3e6e1);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.te-maddeler label.secili { border-color: #4d7a0c; background: #f4f9ea; }
+
+.te-satir { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+
+.te-bilgi {
+  font-size: 12.5px;
+  background: #e7f0fb;
+  color: #1e4f8a;
+  padding: 8px 11px;
+  border-radius: 8px;
+}
+
+.te-telefon { background: #1f2933; border-radius: 14px; padding: 11px; }
+.te-bildirim { background: rgba(255, 255, 255, 0.95); border-radius: 11px; padding: 9px 11px; }
+.te-bildirim-ust { display: flex; justify-content: space-between; font-size: 10.5px; color: #4b5563; font-weight: 600; }
+.te-bildirim b { display: block; font-size: 13px; margin-top: 3px; }
+.te-bildirim p { margin: 2px 0 0; font-size: 12px; line-height: 1.4; color: #1f2933; }
+.te-aciklama { font-size: 11.5px; color: var(--metin-pasif, #6b7280); line-height: 1.5; margin: 0; }
+
+.te-kanal { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.te-kanal small { color: var(--metin-pasif, #6b7280); }
+
+.te-durum { display: flex; flex-direction: column; gap: 12px; }
+.te-durum .te-alt { justify-content: flex-start; }
+
+.te-kart {
+  border: 1px solid #fed7aa;
+  background: #fff8f1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.te-kart.kapali { border-color: var(--cizgi, #e3e6e1); background: #fafbf8; }
+.te-kart.kucuk { padding: 9px 12px; }
+.te-kart-ust { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.te-kart-ust b { font-size: 13.5px; color: #9a3412; }
+.te-kart.kapali .te-kart-ust b { color: #4b5563; }
+.te-kart ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.te-alinti { margin: 0; font-size: 12.5px; color: #4b3a2a; }
+.te-kucuk-alt { font-size: 11.5px; color: var(--metin-pasif, #6b7280); }
+
+.te-akis { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.te-akis li { position: relative; padding-left: 20px; display: flex; flex-direction: column; font-size: 12.5px; }
+.te-akis li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #d1d5db;
+}
+.te-akis li.tamam.te-n-turuncu::before { background: #c2410c; }
+.te-akis li.tamam.te-n-yesil::before { background: #4d7a0c; }
+.te-akis li.tamam.te-n-mavi::before { background: #1e4f8a; }
+.te-akis li.tamam.te-n-gri::before { background: #6b7280; }
+.te-akis li:not(.tamam) b { color: var(--metin-pasif, #6b7280); }
+.te-akis small { color: var(--metin-pasif, #6b7280); }
+
+.te-eskiler { display: flex; flex-direction: column; gap: 8px; }
+
+@media (max-width: 760px) {
+  .te-govde { grid-template-columns: 1fr; }
+}

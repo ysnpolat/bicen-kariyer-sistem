@@ -1,0 +1,64 @@
+ÜRÜN GÖRSELİ İNDİRME
+==============================================================================
+
+Ne yapar
+------------------------------------------------------------------------------
+Barkod listesindeki ürünlerin görsellerini Open Food Facts'ten indirir ve
+<barkod>.jpg biçiminde adlandırır. Portaldaki toplu yükleme ekranı dosya
+adından ürünü bulduğu için başka bir eşleştirme gerekmez.
+
+Neden arama motoru kullanılmıyor
+------------------------------------------------------------------------------
+Arama sonuçlarından görsel toplamak kullanım şartlarına aykırı ve çıkan
+dosyaların telifi başkalarına ait. Open Food Facts açık veri olarak
+yayınlanıyor ve görselleri yeniden kullanıma izinli.
+
+Karşılığında her ürün bulunamaz: gıda ürünlerinde kapsama iyi, temizlik ve
+ev ürünlerinde daha zayıf. Bulunamayanlar ayrı bir dosyaya yazılır;
+o listeyi tedarikçilere gönderip görsel isteyebilirsiniz.
+
+Kurulum
+------------------------------------------------------------------------------
+Node.js gerekiyor; Expo icin zaten kurulu olmali.
+
+
+İki yol var
+------------------------------------------------------------------------------
+TEK TEK SORGULAMA (indir.bat)
+    Her barkod için servise sorar. Kurulum gerektirmez ama servisin
+    dakikalik istek siniri yüzünden yavastir: 800 ürün icin 20-35 dakika.
+    Az sayida ürün icin uygundur.
+
+DÖKÜMLE ESLESTIRME (dokum.bat)
+    Dört veritabaninin tam dökümünü bir kez indirir (yaklasik 1-1,5 GB),
+    sonra esleştirmeyi yerelde yapar. Istek siniri devreye girmez;
+    binlerce ürün icin tek mantikli yol budur.
+
+    Dökümler bir kez indirilir; sonraki calistirmalarda atlanir.
+    Güncel veri icin dokum klasörünü silip yeniden indirmek yeterlidir.
+
+Kullanım
+------------------------------------------------------------------------------
+1. barkod-cikar.sql sorgusunu SSMS'te çalıştırıp sonucu barkodlar.txt
+   olarak kaydedin (her satırda bir barkod).
+
+2. Bu klasörde komut istemi açıp:
+
+       node gorsel-indir.js barkodlar.txt
+
+   Görseller "gorseller" klasörüne iner.
+
+3. Portalda Yönetim → Ürün Görselleri → Toplu yükleme ekranından
+   klasördeki dosyaları seçip yükleyin.
+
+Notlar
+------------------------------------------------------------------------------
+- İstekler arasında bekleme var; binlerce üründe işlem uzun sürer.
+  Bırakıp gidebilirsiniz, yarıda kalırsa aynı komut kaldığı yerden devam
+  eder (inen dosyalar atlanır).
+
+- gorseller/_bulunamayanlar.txt dosyasında bulunamayan barkodlar ve
+  sebepleri yazar.
+
+- Farklı klasöre indirmek için:
+      node gorsel-indir.js barkodlar.txt --klasor D:\gorseller

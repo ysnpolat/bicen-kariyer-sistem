@@ -1,0 +1,182 @@
+/* ===========================================================================
+   Personel kartı › Vardiya planı. Kart çerçevesi "pl-kart" (Personeller.css);
+   ek sınıflar "pv-".
+   =========================================================================== */
+
+.pv {
+  --pv-metin: #1c2419;
+  --pv-soluk: #7b8577;
+  --pv-cizgi: #e4e8df;
+  --pv-yesil: #7cb518;
+}
+
+.pv-gezinti {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pv-hafta {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #4b5563;
+  min-width: 140px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-yukleniyor { opacity: 0.55; transition: opacity 0.15s ease; }
+
+/* ------------------------------------------------------------ üst satır */
+.pv-ust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.pv-hap {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pv-hap-taslak { background: #eef0f3; color: #4b5563; }
+.pv-hap-plansiz { background: #f4f5f2; color: #9aa3af; }
+.pv-hap-gonderildi { background: #eef6e1; color: #3f6507; }
+.pv-hap-degisti { background: #fff6dc; color: #7a5300; }
+
+.pv-gonderen {
+  font-size: 12px;
+  color: var(--pv-soluk);
+}
+
+/* ------------------------------------------------------------ günler */
+.pv-gunler {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .pv-gunler { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.pv-gun {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px 10px 10px;
+  border: 1px solid var(--pv-cizgi);
+  border-radius: 11px;
+  background: #fff;
+}
+
+.pv-gun.pv-bugun {
+  border-color: var(--pv-yesil);
+  box-shadow: 0 0 0 1px var(--pv-yesil);
+  background: #fbfdf7;
+}
+
+.pv-gun-bas {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  width: 100%;
+}
+.pv-gun-bas b { font-size: 13px; color: var(--pv-metin); }
+.pv-gun-bas span { font-size: 11.5px; color: var(--pv-soluk); }
+.pv-bugun .pv-gun-bas::after {
+  content: "bugün";
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  color: #5f8c10;
+}
+
+.pv-rozet {
+  max-width: 100%;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv-rozet-bos {
+  background: transparent;
+  color: #9aa3af;
+  border: 1px dashed #dfe3da;
+  font-weight: 700;
+}
+
+.pv-izin {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #14507f;
+  margin-top: -3px;
+}
+
+.pv-saat {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pv-metin);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pv-saat-yok { color: #c4c9bf; font-weight: 600; }
+
+.pv-cip {
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.pv-cip-okuttu { background: #eef6e1; color: #3f6507; }
+.pv-cip-iceride { background: #e9f0f8; color: #1f4f84; }
+.pv-cip-okutmadi { background: #fdecec; color: #b42318; }
+.pv-cip-izinli { background: #f1f3ef; color: #4b5563; }
+.pv-cip-plan { background: transparent; color: #9aa3af; border: 1px solid #e4e8df; }
+
+.pv-nokta {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: #e8481c;
+}
+
+/* ------------------------------------------------------------ özet */
+.pv-ozet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: #4b5563;
+}
+.pv-ozet b { font-size: 14px; color: var(--pv-metin); margin-right: 2px; }
+.pv-ozet .pv-yesil b { color: #5f8c10; }
+.pv-ozet .pv-kirmizi b { color: #b42318; }
+
+.pv-uyari {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #a33410;
+  background: #fff0ea;
+  border-radius: 8px;
+  padding: 7px 10px;
+}

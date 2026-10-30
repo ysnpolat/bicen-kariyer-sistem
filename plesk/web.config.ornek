@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Plesk (Windows / IIS) icin ornek yapilandirma.
+  Bu dosyayi alan adinin httpdocs klasorune "web.config" adiyla kopyalayiniz.
+
+  GEREKLI EKLENTILER: URL Rewrite + Application Request Routing (ARR)
+  API_SUNUCU_IP degerini API'nin calistigi makinenin adresi ile degistiriniz.
+  API ayni sunucuda ise 127.0.0.1 yaziniz.
+-->
+<configuration>
+  <system.webServer>
+
+    <rewrite>
+      <rules>
+        <!-- /api/... isteklerini API'ye yonlendir -->
+        <rule name="API Ters Vekil" stopProcessing="true">
+          <match url="^api/(.*)" />
+          <action type="Rewrite" url="http://API_SUNUCU_IP:5177/api/{R:1}" />
+        </rule>
+      </rules>
+    </rewrite>
+
+    <!-- Fotograf ve sertifika gorselleri icin istek boyutu (25 MB) -->
+    <security>
+      <requestFiltering>
+        <requestLimits maxAllowedContentLength="26214400" />
+      </requestFiltering>
+    </security>
+
+    <staticContent>
+      <remove fileExtension=".json" />
+      <mimeMap fileExtension=".json" mimeType="application/json" />
+      <remove fileExtension=".webmanifest" />
+      <mimeMap fileExtension=".webmanifest" mimeType="application/manifest+json" />
+    </staticContent>
+
+    <httpProtocol>
+      <customHeaders>
+        <!-- Aday sayfasi arama motorlarina kapatilmak istenirse -->
+        <add name="X-Robots-Tag" value="noindex, nofollow" />
+      </customHeaders>
+    </httpProtocol>
+
+    <defaultDocument>
+      <files>
+        <clear />
+        <add value="index.html" />
+      </files>
+    </defaultDocument>
+
+  </system.webServer>
+</configuration>

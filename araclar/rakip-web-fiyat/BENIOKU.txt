@@ -1,0 +1,45 @@
+RAKİP WEB FİYATLARI
+===================
+
+1. siteler.txt dosyasını açın, okunacak sayfaların adreslerini yazın
+   (her satıra bir adres; isterseniz "Firma | adres").
+2. rakip-fiyat-cek.bat dosyasına çift tıklayın.
+   - İlk çalıştırmada Python bileşenleri ve tarayıcı kurulur (bir kez).
+   - Python yoksa ekranda kurulum komutu yazar.
+3. Bitince sonuç Excel'i açılır: sonuclar\rakip-web-fiyat-TARIH.xlsx
+   - "Ürünler" sayfası: firma, ürün adı, satış fiyatı, eski (üstü çizili) fiyat,
+     indirim %, ürün linki.
+   - "Özet" sayfası: her sayfadan kaç ürün okunduğu, atlanan ya da hata veren sayfalar.
+
+Site otomatik okumaya izin vermiyorsa (robots.txt) — KAYDEDİLMİŞ SAYFA
+- Sayfayı Chrome'da kendiniz açın, ürünlerin hepsi yüklenene kadar en alta
+  kaydırın (varsa "daha fazla" düğmesine basın).
+- Ctrl+S → "Web sayfası, tamamı" ile bu klasördeki kaydedilen-sayfalar
+  klasörüne kaydedin (klasör yoksa oluşturun). Birden çok sayfa koyabilirsiniz.
+- rakip-fiyat-cek.bat'ı çalıştırın: bu dosyalar da okunur. Firma adı,
+  sayfanın adresi siteler.txt'deki bir satırla aynı sitedense oradan alınır.
+- Bu yolda siteye hiçbir otomatik istek gitmez; sayfayı siz görüntülemiş olursunuz.
+
+Kaç ürün toplanır
+- Verilen sayfada yeterli ürün yoksa (ana sayfada yalnızca vitrin olur) araç
+  sitenin menüsündeki kategori sayfalarına ve "sonraki sayfa"ya kendisi girer.
+- Siteden en az 150 ürün toplanınca durur (site başına en çok 20 ek sayfa).
+  Sayıyı değiştirmek için siteler.txt'de satırın sonuna "| en-az 300" yazın.
+- Aynı ürün birden çok sayfada çıkarsa bir kez yazılır.
+
+Firma otomatik okumaya izin veriyorsa
+- Sitenin robots.txt dosyası yasaklasa da siteler.txt'de satırın sonuna
+  "| izinli" yazılan site okunur (sayfalar arası 8 sn beklenir; site erişimi
+  reddederse o çalıştırmada bir daha gidilmez).
+- Tarayıcıyı ekranda izlemek için: rakip-fiyat-cek.bat --goster
+
+Tek bir sayfayı denemek için:  rakip-fiyat-cek.bat https://site.com/kategori
+
+Notlar
+- Sayfa gerçek bir tarayıcıyla açılır, sonuna kadar kaydırılır; "daha fazla"
+  düğmeleri tıklanır. Sayfalar arasında birkaç saniye beklenir.
+- Sitenin robots.txt dosyası otomatik okumayı yasaklıyorsa o sayfa atlanır ve
+  Özet'te "robots.txt izin vermiyor" yazar. Sitelerin kullanım koşullarına
+  uygun kullanın; fiyatları seyrek aralıklarla (ör. günde bir) çekin.
+- Bir sitede ürün çıkmazsa ya da adlar/fiyatlar karışırsa o sayfanın adresini
+  Bilgi İşlem'e iletin; o siteye özel okuma kuralı eklenebilir.

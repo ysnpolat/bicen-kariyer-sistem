@@ -1,0 +1,21 @@
+# Rakip web fiyatları — okunacak sayfalar
+#
+# Her satıra bir sayfa adresi yazın. İsterseniz başına firma adını ve | koyun:
+#     Çağrı | https://www.cagri.com/...
+# Adresteki reklam izleme parametreleri (gclid, gad_source, utm_ ...) kendiliğinden atılır.
+# # ile başlayan satırlar okunmaz.
+#
+# Sitenin robots.txt dosyası otomatik okumayı yasaklıyor ama firma izin
+# veriyorsa satırın sonuna "| izinli" yazın; o sitede robots.txt denetlenmez:
+#     Çağrı | https://www.cagri.com/... | izinli
+#
+# Verilen sayfada yeterli ürün yoksa (ana sayfada yalnızca vitrin olur) araç
+# sitenin menüsündeki kategori sayfalarına ve "sonraki sayfa"ya kendisi girer;
+# siteden en az 150 ürün toplayınca durur (en çok 20 ek sayfa). Sayıyı
+# değiştirmek için satırın sonuna "| en-az 300" yazın:
+#     Çağrı | https://www.cagri.com/ | izinli | en-az 300
+#
+# En iyi sonuç için kategori ya da kampanya sayfası verin (ör. "Süt ürünleri",
+# "Haftanın fırsatları"); ana sayfada yalnızca vitrindeki ürünler görünür.
+
+Çağrı | https://www.cagri.com/ | izinli

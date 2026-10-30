@@ -1,0 +1,40 @@
+{
+  "name": "bicen360",
+  "version": "1.6.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "tunel": "expo start --tunnel",
+    "android": "expo start --android",
+    "ios": "expo start --ios"
+  },
+  "dependencies": {
+    "expo": "~58.0.19",
+    "expo-status-bar": "~58.0.4",
+    "expo-splash-screen": "~58.0.11",
+    "expo-camera": "~58.0.12",
+    "expo-location": "~58.0.19",
+    "expo-secure-store": "~58.0.2",
+    "expo-constants": "~58.0.13",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0",
+    "react-native-svg": "15.16.0",
+    "react-native-webview": "14.0.1",
+    "react-native-qrcode-svg": "^6.3.2",
+    "@react-navigation/native": "^7.1.8",
+    "@react-navigation/bottom-tabs": "^7.3.13",
+    "@react-navigation/native-stack": "^7.3.13",
+    "expo-application": "~58.1.2",
+    "expo-device": "~58.0.5",
+    "expo-file-system": "~58.0.11",
+    "expo-notifications": "~58.1.6",
+    "expo-video": "~58.0.12",
+    "@expo/ngrok": "npm:expo-cloudflared@^4.2.0",
+    "expo-image-picker": "~58.0.10",
+    "expo-document-picker": "~58.0.4"
+  },
+  "private": true
+}

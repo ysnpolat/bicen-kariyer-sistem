@@ -1,0 +1,2 @@
+Logo artik API uzerinden yayinlanmaktadir.
+Logoyu su klasore koyunuz: BicenKariyer.API\wwwroot\logo.png

@@ -1,0 +1,41 @@
+{
+  "KokKlasor": "",
+  "OtomatikYenidenBaslat": true,
+  "ElleDurdurmadaMailGonder": false,
+  "Mail": {
+    "Sunucu": "proxy.turktelekomeposta.com",
+    "Port": 465,
+    "SifrelemeTuru": "SSL",
+    "KullaniciAdi": "",
+    "Parola": "",
+    "GonderenAd": "Bicen Kariyer Panel",
+    "GonderenAdres": "",
+    "AliciAdresler": []
+  },
+  "Servisler": [
+    {
+      "Ad": "API",
+      "Klasor": "BicenKariyer.API",
+      "Komut": "dotnet",
+      "Argumanlar": "run",
+      "Adres": "http://localhost:5177",
+      "OtomatikBaslat": true
+    },
+    {
+      "Ad": "IK Paneli",
+      "Klasor": "bicen-kariyer-ik",
+      "Komut": "cmd.exe",
+      "Argumanlar": "/c npm install --no-audit --no-fund && npm run dev",
+      "Adres": "http://localhost:5178",
+      "OtomatikBaslat": true
+    },
+    {
+      "Ad": "Aday Sayfasi",
+      "Klasor": "bicen-kariyer",
+      "Komut": "cmd.exe",
+      "Argumanlar": "/c npm install --no-audit --no-fund && npm run dev",
+      "Adres": "http://localhost:5179",
+      "OtomatikBaslat": true
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "bicen-kariyer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Bicen Market - Is Basvuru Formu (QR ile genel erisim)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "tipkontrol": "tsc -b --force",
+    "preview": "vite preview --host --port 5179"
+  },
+  "dependencies": {
+    "antd": "^5.29.3",
+    "dayjs": "^1.11.21",
+    "lucide-react": "^0.383.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "expo": {
+    "name": "Bicen360",
+    "slug": "bicen360",
+    "version": "1.10",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "owner": "canerralkans-team",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bicen.personel",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Vardiya giriş çıkışında mağaza karekodunu okutmak, künye ve ürün barkodu taramak, arıza kaydına ve mazeret izni belgesine fotoğraf eklemek için kamera kullanılır.",
+        "NSLocationWhenInUseUsageDescription": "Vardiya kaydının doğru şubede yapıldığını doğrulamak için konum kullanılır.",
+        "NSPhotoLibraryUsageDescription": "Arıza kaydına, kontrol listesine ve mazeret izni belgesine galeriden fotoğraf eklemek için kullanılır.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Biçen360"
+      }
+    },
+    "android": {
+      "package": "com.bicen.personel",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "VIBRATE",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Karekod okutmak, arıza ve izin belgesi fotoğrafı çekmek için kamera izni gerekiyor.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mazeret izni belgenizi galeriden seçebilmeniz için fotoğraflarınıza erişim gerekiyor.",
+          "cameraPermission": "Mazeret izni belgenizin fotoğrafını çekebilmeniz için kamera izni gerekiyor.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Vardiya kaydı için konum izni gerekiyor."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#7cb518",
+          "sounds": [
+            "./assets/sounds/bicen_her_zaman_taze.wav",
+            "./assets/sounds/bicen_taze_kisa.wav",
+            "./assets/sounds/bicen_onay_bekliyor.wav"
+          ]
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-video",
+      [
+        "./eklentiler/uygulama-adi.js",
+        "Biçen360"
+      ]
+    ],
+    "extra": {
+      "apiAdresi": "https://kariyer.bicen.com.tr/apiservis",
+      "api360Adresi": "https://kariyer.bicen.com.tr/portalservis",
+      "eas": {
+        "projectId": "10f4ce01-de18-40df-9206-a81086a604b5"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/10f4ce01-de18-40df-9206-a81086a604b5"
+    }
+  }
+}

@@ -1,0 +1,267 @@
+/* ===========================================================================
+   Vardiya Planları — İK panelinden planlama (06.10.2026). Sınıflar "vp-".
+   Renkler sayfanın eski satır içi değerleriyle aynı: gri #6b7280, marka
+   yeşili #7cb518, turuncu uyarı #e8481c.
+   =========================================================================== */
+
+.vp {
+  --vp-metin: #1c2419;
+  --vp-soluk: #6b7280;
+  --vp-cizgi: #e4e8df;
+  --vp-cizgi2: #eef1ea;
+  --vp-yesil: #7cb518;
+  --vp-yesil-koyu: #5f8c10;
+  --vp-turuncu: #e8481c;
+  --vp-sari: #b7791f;
+  --vp-gri-acik: #f4f6f1;
+}
+
+/* ------------------------------------------------------------ düzen alanı */
+.vp-duzen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .vp-duzen { grid-template-columns: minmax(0, 1fr); }
+}
+
+.vp-arac {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ------------------------------------------------------------ gün hücresi */
+.vp-hucre {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 3px 4px;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  background: transparent;
+  color: #9aa3af;
+  transition: box-shadow 0.12s ease, transform 0.12s ease;
+}
+
+button.vp-hucre { cursor: pointer; }
+button.vp-hucre:hover:not(:disabled) { box-shadow: 0 0 0 2px rgba(28, 36, 25, 0.12); }
+button.vp-hucre:focus-visible { outline: 2px solid var(--vp-yesil); outline-offset: 1px; }
+button.vp-hucre:disabled { cursor: not-allowed; }
+
+.vp-hucre.vp-bos { border: 1px dashed #e1e4dc; }
+button.vp-hucre.vp-bos:hover:not(:disabled) { border-color: #c9cfc1; color: var(--vp-soluk); }
+
+.vp-hucre.vp-secili {
+  box-shadow: 0 0 0 2px var(--vp-metin);
+  transform: translateY(-1px);
+}
+
+.vp-hucre.vp-bekliyor { opacity: 0.6; }
+
+.vp-hucre-alt {
+  font-size: 8.5px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.vp-nokta {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--vp-turuncu);
+}
+
+.vp-kilit {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 8px;
+  opacity: 0.55;
+}
+
+/* ------------------------------------------------------------ durum hapı */
+.vp-hap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vp-hap-taslak { background: #eef0f3; color: #4b5563; }
+.vp-hap-plansiz { background: #f4f5f2; color: #9aa3af; }
+.vp-hap-gonderildi { background: #eef6e1; color: #3f6507; }
+.vp-hap-degisti { background: #fff6dc; color: #7a5300; }
+button.vp-hap { cursor: pointer; }
+button.vp-hap-degisti:hover { background: #ffedb8; }
+
+.vp-satir-not { font-size: 10.5px; margin-top: 2px; }
+.vp-satir-not.vp-sari { color: var(--vp-sari); }
+.vp-satir-not.vp-turuncu { color: var(--vp-turuncu); }
+.vp-satir-not.vp-soluk { color: var(--vp-soluk); }
+
+/* ------------------------------------------------------------ seçici panel */
+.vp-secici {
+  position: sticky;
+  top: 12px;
+  background: #fff;
+  border: 1px solid var(--vp-cizgi);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(20, 30, 10, 0.05), 0 4px 14px rgba(20, 30, 10, 0.05);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vp-secici-bas small {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: var(--vp-soluk);
+}
+
+.vp-secici-bas b {
+  display: block;
+  font-size: 15px;
+  margin-top: 3px;
+  color: var(--vp-metin);
+}
+
+.vp-secici-bas span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--vp-soluk);
+  margin-top: 1px;
+}
+
+.vp-secici-bos {
+  font-size: 13px;
+  color: var(--vp-soluk);
+  line-height: 1.5;
+}
+
+.vp-mevcut {
+  font-size: 12px;
+  color: var(--vp-soluk);
+}
+.vp-mevcut b { color: var(--vp-metin); }
+
+.vp-baslik {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--vp-soluk);
+  margin-bottom: 6px;
+}
+
+.vp-secenekler {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vp-secenek {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 7px 9px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.12s ease;
+}
+
+.vp-secenek b { font-size: 13px; font-weight: 800; }
+.vp-secenek small { font-size: 10.5px; font-weight: 600; opacity: 0.75; }
+.vp-secenek:hover:not(:disabled) { box-shadow: 0 0 0 2px rgba(28, 36, 25, 0.14); }
+.vp-secenek:disabled { cursor: wait; opacity: 0.6; }
+.vp-secenek.vp-aktif { box-shadow: 0 0 0 2px var(--vp-metin); }
+
+.vp-secenek-izin { background: var(--vp-gri-acik); color: #4b5563; }
+.vp-secenek-bos { background: #fff; color: var(--vp-soluk); border: 1px dashed #d5dacd; }
+
+.vp-haftaya {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  color: #4b5563;
+  line-height: 1.35;
+}
+
+.vp-bilgi {
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 7px 9px;
+  line-height: 1.4;
+}
+.vp-bilgi-mavi { background: #e9f0f8; color: #1f4f84; }
+.vp-bilgi-sari { background: #fff6dc; color: #7a5300; }
+.vp-bilgi-turuncu { background: #fff0ea; color: #a33410; }
+
+.vp-ipucu {
+  font-size: 11.5px;
+  color: var(--vp-soluk);
+  border-top: 1px dashed var(--vp-cizgi);
+  padding-top: 9px;
+}
+
+/* ------------------------------------------------------------ açıklama */
+.vp-lejant {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--vp-soluk);
+  padding: 4px 2px;
+}
+
+.vp-lejant > span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.vp-lejant i {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.vp-lejant-not {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+/* Devamsızlık (23.10.2026) */
+.vp-hucre-alt.vp-devamsiz { color: #fff; background: #e8481c; border-radius: 4px; padding: 0 4px; font-weight: 800; display: inline-block; margin-top: 2px; }
+.vp-hucre-alt.vp-okutmadi { color: #b42318; font-weight: 700; }
+.vp-satir-not.vp-kirmizi { color: #b42318; font-weight: 700; }

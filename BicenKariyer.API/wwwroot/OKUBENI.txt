@@ -1,0 +1,6 @@
+Kurum logosunu bu klasore "logo.png" adiyla kopyalayiniz.
+
+Bu tek dosya hem aday basvuru sayfasinda hem de IK panelinde kullanilir.
+Desteklenen adlar: logo.png, logo.jpg, logo.jpeg, logo.svg
+
+Dosya yoksa sayfalar hata vermez; aday sayfasinda yazi tipi logo gorunur.

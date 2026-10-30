@@ -1,0 +1,16 @@
+/* Tıklanınca personel kartını açan ad (09.10.2026) */
+.pk-ad {
+  cursor: pointer;
+  border-radius: 3px;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.pk-ad:hover,
+.pk-ad:focus-visible {
+  color: #3f7a2a;
+  text-decoration-color: currentColor;
+  outline: none;
+}

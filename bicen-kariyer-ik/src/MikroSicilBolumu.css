@@ -1,0 +1,307 @@
+/* Mikro sicil kartı bölümü (İşe Al penceresi) ve başvuru durum şeridi */
+
+.ms-kutu {
+  margin-top: 18px;
+  border: 1px solid #e4e8e0;
+  border-radius: 12px;
+  background: #fbfcfa;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ms-kutu.ms-acik {
+  border-color: #b7d3a8;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(46, 94, 30, 0.04), 0 6px 18px -12px rgba(46, 94, 30, 0.35);
+}
+
+.ms-baslik {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.ms-acik .ms-baslik {
+  border-bottom: 1px solid #edf1ea;
+  background: linear-gradient(180deg, #f6faf3, #fff);
+}
+
+.ms-simge {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #e9f3e3;
+  color: #3f7a2a;
+  flex: none;
+}
+
+.ms-baslik-metin {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.ms-baslik-metin b {
+  font-size: 14px;
+  color: #1f2a1a;
+}
+
+.ms-baslik-metin span {
+  font-size: 12px;
+  color: #6b7563;
+}
+
+.ms-govde {
+  padding: 14px 16px 6px;
+}
+
+/* ------------------------------------------------------------- özet şeridi */
+.ms-serit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ms-serit-kalem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f4f6f2;
+  font-size: 12.5px;
+  color: #5b6553;
+}
+
+.ms-serit-kalem b {
+  color: #1f2a1a;
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-serit-kalem i {
+  font-style: normal;
+  font-size: 11px;
+  color: #8a9282;
+  border-bottom: 1px dotted #b0b7a8;
+  cursor: help;
+}
+
+.ms-nokta {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #bfc5ba;
+}
+
+.ms-nokta.yesil { background: #52a447; }
+.ms-nokta.kirmizi { background: #d4380d; }
+.ms-nokta.turuncu { background: #d48806; }
+
+.ms-uyari {
+  margin-bottom: 12px;
+}
+
+/* ---------------------------------------------------------------- form */
+.ms-form .ant-form-item {
+  margin-bottom: 12px;
+}
+
+.ms-form .ant-form-item-label > label {
+  font-size: 12.5px;
+  color: #4a5442;
+}
+
+.ms-grup {
+  border: 0;
+  margin: 0 0 6px;
+  padding: 0;
+  min-width: 0;
+}
+
+.ms-grup legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #e3e8de;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5d7a4c;
+}
+
+.ms-izgara {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 14px;
+  align-items: start;
+}
+
+.ms-izgara > * {
+  min-width: 0;
+}
+
+.ms-genis {
+  grid-column: span 2;
+}
+
+.ms-ikiz {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+
+.ms-ikili {
+  display: flex;
+  width: 100%;
+}
+
+.ms-ikili .ant-radio-button-wrapper {
+  flex: 1;
+  text-align: center;
+}
+
+.ms-secenekler {
+  grid-column: span 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  padding-top: 30px;
+}
+
+.ms-ipucu {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #eef1ea;
+  color: #6b7563;
+  font-size: 10px;
+  cursor: help;
+}
+
+.ms-sablon {
+  font-size: 12px;
+  color: #6b7563;
+}
+
+.ms-sablon b {
+  color: #2f3a28;
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-dipnot {
+  margin: 4px 0 10px;
+  font-size: 11.5px;
+  color: #8a9282;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .ms-izgara {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ms-secenekler {
+    padding-top: 0;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .ms-izgara {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ms-genis,
+  .ms-secenekler {
+    grid-column: auto;
+  }
+}
+
+/* --------------------------------------------- başvuru kartı durum şeridi */
+.ms-durum {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  border-radius: 10px;
+  border: 1px solid #e4e8e0;
+  background: #f8faf6;
+  font-size: 13px;
+}
+
+.ms-durum-ikon {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.ms-durum-metin {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.ms-durum-metin span {
+  font-size: 12px;
+  color: #6b7563;
+}
+
+.ms-durum-dugme {
+  flex: none;
+}
+
+.ms-durum-acildi {
+  border-color: #b7dfa5;
+  background: #f3faef;
+}
+.ms-durum-acildi .ms-durum-ikon { color: #389e0d; }
+
+.ms-durum-bekliyor,
+.ms-durum-aciliyor {
+  border-color: #c9dcf5;
+  background: #f4f8fe;
+}
+.ms-durum-bekliyor .ms-durum-ikon,
+.ms-durum-aciliyor .ms-durum-ikon { color: #1d5fbf; }
+
+.ms-durum-hata {
+  border-color: #f3c0b0;
+  background: #fff6f2;
+}
+.ms-durum-hata .ms-durum-ikon { color: #c2410c; }
+
+/* ------------------------------------------------- personel kartı RSM şeridi */
+.ms-rsm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e4e8e0;
+  background: #f8faf6;
+  font-size: 12.5px;
+  color: #4a5442;
+}
+
+.ms-rsm.ms-rsm-yok {
+  border-color: #f3c0b0;
+  background: #fff6f2;
+}
+
+.ms-rsm b {
+  color: #1f2a1a;
+}

@@ -1,0 +1,94 @@
+/* Personel Talepleri › Fazla mesai. Sınıflar "fm-"; kart ve KPI "it-" (IzinTalepleri.css). */
+
+.fm-simge { background: #eef4fb !important; color: #1a4d80 !important; }
+
+.fm-kisi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fm-kisi b { font-weight: 700; }
+.fm-kisi small { font-size: 12px; color: #6b7280; display: inline-flex; align-items: center; gap: 4px; }
+.fm-kisi small.fm-ok { color: #3f6108; }
+.fm-kisi small.fm-hata { color: #b42318; }
+.fm-neden { color: #374151; }
+
+.fm-rozet {
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.fm-r-sari { background: #fff8e6; color: #92600e; }
+.fm-r-mavi { background: #eef4fb; color: #1f4f82; }
+.fm-r-yesil { background: #eef6e1; color: #3f6108; }
+.fm-r-kirmizi { background: #fdecec; color: #b42318; }
+.fm-r-gri { background: #f1f3ef; color: #6b7280; }
+
+.fm-dugmeler { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.fm-onayla { border-color: #b9d98a !important; color: #3f6108 !important; background: #f2f9e8 !important; }
+.fm-reddet { color: #b42318 !important; }
+
+.fm-ayrinti {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  padding: 6px 4px;
+}
+.fm-ayrinti small { font-size: 11.5px; font-weight: 700; color: #6b7280; letter-spacing: 0.03em; }
+.fm-ayrinti p { margin: 2px 0 0; font-size: 13px; color: #1f2933; line-height: 1.5; }
+
+.fm-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: #5f8c10;
+  cursor: pointer;
+}
+.fm-link:hover { text-decoration: underline; }
+.fm-link-kirmizi { color: #b42318; }
+
+.fm-pencere { display: flex; flex-direction: column; gap: 12px; }
+.fm-ozet {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f4f6f2;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.fm-ozet span { font-size: 13px; color: #374151; }
+.fm-ozet small { font-size: 12.5px; color: #6b7280; }
+.fm-bilgi { margin: 0; font-size: 12.5px; color: #4b5563; line-height: 1.55; }
+.fm-yuklu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #3f6108;
+  background: #f2f9e8;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.fm-dosya {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px dashed #b9d98a;
+  background: #fbfdf7;
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  color: #3f6108;
+  font-weight: 600;
+}
+.fm-dosya:hover { background: #f2f9e8; }
+.fm-dosya input { display: none; }
+.fm-dosya span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.it-kpi-mavi.secili::after { background: #2e6aa8; }
+
+/* 15.10.2026: satıra tıklayınca yan pencere */
+.fm-satir-secili > td { background: #f2f9e8 !important; }
+.fm-kisi-ad { color: #1f2933; }
+.fm-ucret { color: #3f6108; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fm-izin { color: #1d4ed8; font-weight: 600; font-variant-numeric: tabular-nums; }

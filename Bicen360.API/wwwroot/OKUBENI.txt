@@ -1,0 +1,6 @@
+Kurum logosunu bu klasore "logo.png" adiyla kopyalayiniz.
+
+En kolayi: BicenKariyer.API/wwwroot/logo.png dosyasini buraya kopyalamak.
+Desteklenen adlar: logo.png, logo.jpg, logo.jpeg, logo.svg
+
+Dosya yoksa sayfalar hata vermez; giris ekraninda logo alani bos kalir.

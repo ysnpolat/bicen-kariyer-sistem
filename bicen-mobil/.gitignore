@@ -1,0 +1,6 @@
+.expo/
+node_modules/
+dist/
+
+# Play Store servis hesabı anahtarı: gizli, paylaşılmamalı
+play-anahtar.json

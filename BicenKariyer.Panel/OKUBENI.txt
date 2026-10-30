@@ -1,0 +1,24 @@
+BICEN KARIYER - SERVIS PANELI
+=============================
+
+Kurulum (tek seferlik):
+  1. Bu klasorde komut satirini acip su komutu calistirin:
+       dotnet publish -c Release -r win-x64 --self-contained false -o yayin
+  2. yayin klasorundeki BicenKariyerPanel.exe dosyasini calistirin.
+     Masaustune kisayol olusturabilirsiniz.
+
+Gelistirme sirasinda:
+  baslat.bat dosyasina cift tiklayin (dotnet run ile acar).
+
+Windows ile birlikte baslatmak icin:
+  Win + R -> shell:startup -> BicenKariyerPanel.exe kisayolunu buraya koyun.
+
+Servis komutlari ayarlar.json dosyasindan duzenlenir.
+Sunucuda yayin modunda calistirmak icin onerilen ayar:
+
+  IK Paneli    : cmd.exe  /c npm run preview
+  Aday Sayfasi : cmd.exe  /c npm run preview
+  API          : dotnet   run --configuration Release
+
+Onceden her iki frontend klasorunde "npm run build" komutunu calistirmayi
+unutmayiniz; preview komutu derlenmis dosyalari yayinlar.

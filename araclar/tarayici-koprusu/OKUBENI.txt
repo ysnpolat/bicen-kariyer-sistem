@@ -1,0 +1,57 @@
+﻿BİÇEN TARAYICI KÖPRÜSÜ
+======================
+
+İK panelindeki evrak yükleme alanlarında "Tara" düğmesi, bilgisayara bağlı
+tarayıcıdaki ya da taramalı yazıcıdaki evrakı tarayıp PDF olarak doğrudan
+yükleme alanına ekler. Web sayfası tarayıcıya kendisi erişemediği için bu
+küçük yardımcının bilgisayara bir kez kurulması gerekir.
+
+KURULUM (her İK bilgisayarında bir kez, yönetici yetkisi gerekmez)
+  1. Bu zip'i bir klasöre açın.
+  2. kur.bat dosyasına çift tıklayın.
+  3. Ekranda tarayıcınızın adı listelenirse kurulum tamamdır.
+  4. Paneli yenileyin; ilk taramada Chrome/Edge "yerel ağdaki cihazlara
+     erişim" izni sorarsa "İzin ver" deyin.
+
+GEREKSİNİMLER
+  - Windows 10 / 11 (.NET Framework 4.8 Windows ile birlikte gelir).
+  - Tarayıcının Windows sürücüsü kurulu olmalı: cihaz "Windows Faks ve
+    Tarama" ya da "Tarayıcılar ve Kameralar"da görünüyorsa olur.
+    Ağdaki çok fonksiyonlu yazıcılar için üreticinin "WIA" ya da "tarama"
+    sürücüsü kurulmalıdır (yalnızca yazdırma sürücüsü yetmez).
+
+AĞ TARAYICISI (SÜRÜCÜSÜZ, sürüm 1.1)
+  Bilgisayarda tarama sürücüsü kurulamıyorsa ya da "tarayıcı bulunamadı"
+  diyorsa: çok fonksiyonlu yazıcı ağa bağlıysa sürücü gerekmez. Köprü
+  yazıcıyla ağ üzerinden doğrudan konuşur (AirScan / eSCL; 2016 sonrası
+  Canon, HP, Epson, Brother, Kyocera, Ricoh, Xerox cihazlarının çoğu).
+  - kur.bat kurulumda yazıcının IP adresini sorar; ya da
+  - panelde "Tara"nın yanındaki ayar düğmesi › Ağ tarayıcısı › IP yazıp Ekle.
+  IP, yazıcının ekranında ağ ayarlarında ya da yapılandırma sayfasında yazar.
+  Desteklenip desteklenmediğini görmek için tarayıcıda
+  http://YAZICI-IP/eSCL/ScannerCapabilities adresini açın; uzun bir XML
+  geliyorsa destekliyor.
+
+KULLANIM
+  - "Tara": son seçilen ayarlarla tarar. Besleyicide (ADF) kağıt varsa
+    oradaki bütün sayfalar, yoksa camdaki sayfa taranır; hepsi tek PDF olur.
+  - Yanındaki ayar düğmesinden tarayıcı, renk (gri / renkli / siyah-beyaz),
+    çözünürlük ve kaynak (otomatik / besleyici / cam) seçilir.
+
+GÜVENLİK
+  - Program yalnızca bu bilgisayarın içinden (127.0.0.1:47115) ulaşılabilir;
+    ağdaki başka bilgisayarlar bağlanamaz.
+  - Taramayı yalnızca izinli-adresler.txt dosyasındaki siteler başlatabilir
+    (varsayılan: https://kariyer.bicen.com.tr).
+  - Taranan belge diske kaydedilmez; günlük dosyasına yalnızca sayfa sayısı
+    yazılır.
+
+KALDIRMA
+  kaldir.bat dosyasına çift tıklayın.
+
+SORUN GİDERME
+  - Durum: tarayıcıda http://127.0.0.1:47115/durum açılırsa program çalışıyordur.
+  - Günlük: %LOCALAPPDATA%\BicenTarayici\gunluk.txt
+  - Panel başka bir adresten açılıyorsa adresi
+    %LOCALAPPDATA%\BicenTarayici\izinli-adresler.txt dosyasına ekleyip
+    oturumu kapatıp açın.

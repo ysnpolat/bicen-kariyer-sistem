@@ -1,0 +1,35 @@
+
+/* Bizi nereden duydunuz.
+
+   Onay adımının içinde ayrı bir kutu: aday buraya kadar formu
+   doldurmuş oluyor ve tek soruluk bu bölüm karışmasın diye çerçeveyle
+   ayrılıyor. */
+.bsv-kaynak {
+  border: 1px solid #e3e6e1;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 14px;
+  background: #fafbf8;
+}
+
+.bsv-kaynak-baslik {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2933;
+  margin-bottom: 10px;
+}
+
+.bsv-kaynak-secim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bsv-kaynak-secim .ant-radio-button-wrapper {
+  border-radius: 8px;
+  border-inline-start-width: 1px;
+}
+
+.bsv-kaynak-secim .ant-radio-button-wrapper::before {
+  display: none;
+}

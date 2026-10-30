@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <RootNamespace>Bicen360.API</RootNamespace>
+
+    <!-- Yayınlarken web.config'e dokunma.
+         Varsayılan davranış dosyayı dönüştürüp aspNetCore elemanını kendi
+         eklemek; bizim dosyamızda o eleman zaten tanımlı ve dönüşüm
+         processPath'siz ikinci bir eleman üretip uygulamayı başlatılamaz
+         hâle getiriyordu. -->
+    <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.35" />
+
+    <!-- Mail gönderimi MailKit ile: .NET'in SmtpClient sınıfı 465 numaralı
+         porttaki implicit SSL'i desteklemiyor ve Türk Telekom sunucusuna
+         hiç bağlanamıyordu. Kariyer API'si de aynı paketi kullanıyor. -->
+    <PackageReference Include="MailKit" Version="4.16.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.2" />
+  </ItemGroup>
+
+</Project>

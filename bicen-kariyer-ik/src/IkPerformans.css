@@ -1,0 +1,97 @@
+/* İK Performans — yeni yerleşim */
+
+:root, .ip { --ip-yesil:#7cb518; --ip-yesilKoyu:#5f8c10; --ip-yesilAcik:#f2f9e8; --ip-turuncu:#e8481c;
+  --ip-mavi:#1a5fb4; --ip-mor:#722ed1; --ip-cam:#08979c; --ip-sari:#b7791f; --ip-kirmizi:#cf1322;
+  --ip-pasif:#6b7280; --ip-soluk:#9aa3af; --ip-cizgi:#e3e6e1; }
+
+.ip-baslik { display:flex; justify-content:space-between; align-items:flex-end; gap:14px; flex-wrap:wrap; margin:2px 0 14px; }
+.ip-baslik h2 { margin:0; font-size:20px; display:flex; align-items:center; gap:9px; }
+.ip-baslik h2 i { width:32px; height:32px; border-radius:9px; background:var(--ip-yesilAcik); color:var(--ip-yesilKoyu); display:grid; place-items:center; }
+.ip-baslik p { margin:3px 0 0; color:var(--ip-pasif); font-size:13px; }
+.ip-cipler { display:flex; gap:4px; background:#fff; border:1px solid var(--ip-cizgi); border-radius:11px; padding:4px; }
+.ip-cipler button { border:0; background:none; padding:5px 12px; border-radius:8px; font-weight:600; font-size:12.5px; color:var(--ip-pasif); cursor:pointer; }
+.ip-cipler button:hover { color:#1f2933; }
+.ip-cipler button.acik { background:var(--ip-yesilAcik); color:var(--ip-yesilKoyu); }
+
+.ip-panel { background:#fff; border:1px solid var(--ip-cizgi); border-radius:12px; padding:14px 16px; box-shadow:0 1px 2px rgba(16,24,16,.04),0 2px 8px rgba(16,24,16,.04); min-width:0; }
+.ip-pbas { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+.ip-pbas b { font-size:14.5px; }
+.ip-pbas small { color:var(--ip-pasif); font-size:12px; display:block; font-weight:400; }
+
+.ip-kpi { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+.ip-k { background:#fff; border:1px solid var(--ip-cizgi); border-radius:12px; padding:12px 14px; position:relative; overflow:hidden; text-align:left; cursor:pointer; font:inherit; color:inherit; }
+.ip-k:hover { border-color:var(--c,var(--ip-yesil)); box-shadow:0 0 0 3px var(--ip-yesilAcik); }
+.ip-k::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--c,var(--ip-yesil)); }
+.ip-k > span { font-size:11.5px; font-weight:700; color:var(--ip-pasif); letter-spacing:.3px; text-transform:uppercase; }
+.ip-k > b { display:block; font-size:25px; font-weight:800; margin:3px 0 1px; color:var(--c2,#1f2933); line-height:1.2; }
+.ip-k > small { font-size:12px; color:var(--ip-pasif); }
+.ip-fark { font-weight:700; }
+.ip-iyi { color:var(--ip-yesilKoyu); }
+.ip-kotu { color:var(--ip-kirmizi); }
+.ip-etiket { font-size:11px; font-weight:700; border-radius:6px; padding:1px 7px; white-space:nowrap; display:inline-block; }
+.ip-e-mor { background:#f6efff; color:var(--ip-mor); }
+.ip-e-sari { background:#fff8e6; color:var(--ip-sari); }
+.ip-e-tur { background:#fff1ea; color:var(--ip-turuncu); }
+
+.ip-iki { display:grid; grid-template-columns:1.1fr 1fr; gap:14px; margin-bottom:14px; align-items:start; }
+.ip-uc { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:14px; align-items:start; }
+
+.ip-huni { display:flex; flex-direction:column; gap:9px; }
+.ip-h { display:grid; grid-template-columns:110px 1fr 90px; align-items:center; gap:12px; border-radius:9px; padding:3px 4px; cursor:pointer; }
+.ip-h:hover { background:#f7f9f5; }
+.ip-h-ad { font-size:13px; font-weight:600; }
+.ip-h-cubuk { height:30px; background:#f1f3ef; border-radius:8px; position:relative; overflow:hidden; }
+.ip-h-cubuk i { position:absolute; left:0; top:0; bottom:0; border-radius:8px; display:flex; align-items:center; padding-left:10px; color:#fff; font-style:normal; font-weight:800; font-size:13px; min-width:46px; transition:width .4s; }
+.ip-h-oran { text-align:right; font-size:12px; color:var(--ip-pasif); }
+.ip-h-oran b { display:block; color:#1f2933; font-size:13.5px; }
+
+.ip-bolge { display:grid; grid-template-columns:150px 1fr 64px; gap:12px; align-items:center; padding:8px 10px; border-radius:10px; border:1px solid transparent; cursor:pointer; }
+.ip-bolge:hover { background:#fafbf9; border-color:var(--ip-cizgi); }
+.ip-bolge b { font-size:13.5px; }
+.ip-bolge small { display:block; font-size:11.5px; color:var(--ip-pasif); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ip-yigin { display:flex; height:12px; border-radius:6px; overflow:hidden; background:#f1f3ef; }
+.ip-yigin i { display:block; height:100%; }
+.ip-bolge-sag { text-align:right; font-weight:800; font-size:15px; line-height:1.1; }
+.ip-bolge-sag small { font-weight:500; font-size:11px; }
+.ip-lej { display:flex; gap:12px; flex-wrap:wrap; font-size:11.5px; color:var(--ip-pasif); }
+.ip-lej span { display:inline-flex; align-items:center; gap:5px; }
+.ip-lej i { width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+.ip-uzmanlar { display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:12px; }
+.ip-uz { border:1px solid var(--ip-cizgi); border-radius:12px; padding:13px; background:#fff; position:relative; text-align:left; cursor:pointer; font:inherit; color:inherit; }
+.ip-uz:hover { border-color:var(--ip-yesil); box-shadow:0 0 0 3px var(--ip-yesilAcik); }
+.ip-uz-ust { display:flex; gap:10px; align-items:center; margin-bottom:10px; padding-right:22px; }
+.ip-av { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; color:#fff; font-weight:800; font-size:14px; flex:none; }
+.ip-uz-ust b { font-size:14px; display:block; }
+.ip-uz-ust small { font-size:11.5px; color:var(--ip-pasif); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ip-sira { position:absolute; top:10px; right:12px; font-size:11px; font-weight:800; color:var(--ip-soluk); }
+.ip-sayilar { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; text-align:center; background:#fafbf9; border-radius:9px; padding:8px 4px; margin-bottom:10px; }
+.ip-sayilar b { display:block; font-size:17px; font-weight:800; }
+.ip-sayilar span { font-size:10.5px; color:var(--ip-pasif); }
+.ip-satir { display:flex; justify-content:space-between; align-items:center; font-size:12.5px; padding:4px 0; }
+.ip-satir > span:first-child { color:var(--ip-pasif); }
+.ip-hal { width:46px; height:46px; border-radius:50%; display:grid; place-items:center; flex:none; }
+.ip-hal::after { content:attr(data-v); width:36px; height:36px; border-radius:50%; background:#fff; display:grid; place-items:center; font-size:11px; font-weight:800; }
+
+.ip-poz { display:grid; grid-template-columns:120px 1fr 64px; gap:10px; align-items:center; padding:6px; font-size:12.5px; border-radius:8px; cursor:pointer; }
+.ip-poz:hover { background:#f7f9f5; }
+.ip-poz-bar { height:10px; background:#f1f3ef; border-radius:5px; position:relative; }
+.ip-poz-bar i { position:absolute; left:0; top:0; bottom:0; border-radius:5px; }
+.ip-poz-bar u { position:absolute; top:-3px; width:2px; height:16px; background:#1f2933; opacity:.35; }
+.ip-poz b { text-align:right; }
+
+.ip-ucret { display:grid; grid-template-columns:120px 1fr 64px; gap:10px; align-items:center; font-size:12.5px; padding:7px 6px; border-bottom:1px solid #f0f2ee; border-radius:8px; cursor:pointer; }
+.ip-ucret:hover { background:#f7f9f5; }
+.ip-ucret-cubuk { position:relative; height:18px; }
+.ip-ucret-cubuk .t { position:absolute; top:2px; height:6px; border-radius:3px; background:#d6dbd2; }
+.ip-ucret-cubuk .a { position:absolute; top:10px; height:6px; border-radius:3px; background:var(--ip-yesil); }
+
+.ip-neden { display:flex; justify-content:space-between; align-items:center; padding:7px 6px; border-bottom:1px solid #f0f2ee; font-size:13px; border-radius:8px; cursor:pointer; gap:8px; }
+.ip-neden:hover { background:#f7f9f5; }
+.ip-neden em { font-style:normal; font-weight:800; }
+.ip-bag { color:var(--ip-yesilKoyu); font-weight:700; cursor:pointer; text-decoration:underline dotted; }
+.ip-alt { margin-top:10px; font-size:12px; color:var(--ip-pasif); }
+.ip-bos { padding:24px; text-align:center; color:var(--ip-soluk); }
+
+@media (max-width:1200px) { .ip-kpi { grid-template-columns:repeat(3,1fr); } .ip-iki, .ip-uc { grid-template-columns:1fr; } }
+@media (max-width:640px) { .ip-kpi { grid-template-columns:repeat(2,1fr); } }

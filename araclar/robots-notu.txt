@@ -1,0 +1,9 @@
+Aday sayfasinin arama motorlarinda gorunmesini istemiyorsaniz site kok
+klasorune "robots.txt" adinda bir dosya olusturup icine sunlari yaziniz:
+
+    User-agent: *
+    Disallow: /panel
+    Disallow: /apiservis
+
+Aday sayfasinin bulunabilir olmasi genelde istenir; panel ve API yollari
+ise kapatilmalidir.
