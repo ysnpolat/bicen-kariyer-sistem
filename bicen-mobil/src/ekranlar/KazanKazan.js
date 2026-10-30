@@ -407,7 +407,12 @@ function FormGorunum({ kisi, gonderildi }) {
   const gorselSec = async (kamera) => {
     try {
       const r = kamera ? await kameradanCek({ quality: 0.6 }) : await galeridenSec({ quality: 0.6 });
-      if (r?.uri) setGorsel(r.uri);
+      /* Seçici sonucu { canceled, assets: [{ uri }] } biçiminde; eskiden
+         r.uri okunuyordu ve seçilen görsel hiç kaydedilmiyordu (30.10.2026) */
+      if (r?.canceled) return;
+      const uri = r?.assets?.[0]?.uri ?? r?.uri;
+      if (uri) setGorsel(uri);
+      else setHata("Görsel alınamadı, tekrar deneyin.");
     } catch (h) {
       setHata(h.message);
     }
@@ -554,9 +559,7 @@ function FormGorunum({ kisi, gonderildi }) {
           <Alan etiket="Ürünün görseli">
             {gorsel ? (
               <View style={s.gorselKutu}>
-                <View style={s.gorselOnizleme}>
-                  <Simge ad="foto" renkli={renk.yesilKoyu} boyut={26} />
-                </View>
+                <Image source={{ uri: gorsel }} style={s.gorselOnizleme} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.gorselAd}>urun-fotografi.jpg</Text>
                   <Text style={s.kimlikAlt}>Fotoğraf eklendi</Text>
