@@ -3174,6 +3174,14 @@ ORDER BY olusturma", new { b = Bekliyor, m = MagazaOnayli }).ToList();
 
         /* Zincirli talepte mobil aşama: 1 ilk adım (form yükleme), 2 ara adımlar
            (formu görüp onay). Eski talepte durumdan. */
+        /* Saatlik izinde " · 3 saat (09:00–12:00)" eki; değilse boş */
+        static string SaatEki(dynamic t)
+        {
+            if (t.saat is null || string.IsNullOrWhiteSpace((string)t.baslangic_saat)) return "";
+            var saat = ((decimal)t.saat).ToString("0.##", new System.Globalization.CultureInfo("tr-TR"));
+            return $" · {saat} saat ({t.baslangic_saat}–{t.bitis_saat})";
+        }
+
         int MobilAsama(dynamic t) =>
             IzinOnayZinciri.Talepten((object)t) is { } zt
                 ? IzinOnayZinciri.MobilAsama(zt.Zincir, zt.Asama)
@@ -3224,11 +3232,18 @@ ORDER BY olusturma", new { b = Bekliyor, m = MagazaOnayli }).ToList();
                 adSoyad = (string)t.ad_soyad,
                 subeAdi = (string)t.sube_adi,
                 gorev = (string)t.gorev,
-                tur = yeni || string.IsNullOrWhiteSpace((string)t.alt_tur) ? (string)t.tur : $"{t.tur} · {t.alt_tur}",
+                /* Saatlik izin (30.10.2026): kartta "0,5 gün" yerine saat görünsün.
+                   Eski mobil sürümler için tür metnine eklenir; 1.10+ ayrıca
+                   saat/baslangicSaat/bitisSaat alanlarını kullanır. */
+                tur = (yeni || string.IsNullOrWhiteSpace((string)t.alt_tur) ? (string)t.tur : $"{t.tur} · {t.alt_tur}")
+                      + SaatEki(t),
                 altTur = (string)t.alt_tur,
                 cikisTarihi = (DateTime)t.cikis_tarihi,
                 donusTarihi = (DateTime)t.donus_tarihi,
                 gun = (decimal)t.gun,
+                saat = t.saat is null ? (decimal?)null : (decimal)t.saat,
+                baslangicSaat = (string)t.baslangic_saat,
+                bitisSaat = (string)t.bitis_saat,
                 /* 09.10.2026: imzalı formu birim yöneticisi yükler; 1.6 kartında
                    yükleme düğmesi yok, yol açıklamada */
                 aciklama = yeni17

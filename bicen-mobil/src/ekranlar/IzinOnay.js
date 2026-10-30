@@ -368,7 +368,8 @@ const surecAlt = (t) => {
     return `${tarihYaz(t.tarih)} · ${t.baslangic}–${t.bitis} · ${t.sure}`;
   if (t.tip === "avans")
     return `${lira(t.tutar)} · ${t.taksit === 1 ? "tek seferde" : `${t.taksit} taksit`}${t.neden ? ` · ${t.neden}` : ""}`;
-  return `${t.altTur ? `${t.tur} · ${t.altTur}` : t.tur} · ${kisaTarih(t.cikisTarihi)}–${kisaTarih(t.donusTarihi)} · ${String(t.gun).replace(".", ",")} gün`;
+  const sure = t.saat ? `${String(t.saat).replace(".", ",")} saat` : `${String(t.gun).replace(".", ",")} gün`;
+  return `${t.altTur ? `${t.tur} · ${t.altTur}` : t.tur} · ${kisaTarih(t.cikisTarihi)}–${kisaTarih(t.donusTarihi)} · ${sure}`;
 };
 
 /** Süreç kartı: kim, ne, durum ve adımlar. Dokununca adımların ayrıntısı. */
@@ -1025,8 +1026,15 @@ function BekleyenKart({ t, islenen, gorulen, setGorulen, karar, yenile, reddet, 
             </View>
 
             <View style={[s.gunKutu, s.gunIstenen]}>
-              <Text style={[s.gunEtiket, { color: renk.yesilKoyu }]}>GÜN</Text>
-              <Text style={[s.gunDeger, { color: renk.yesilKoyu }]}>{String(t.gun).replace(".", ",")}</Text>
+              <Text style={[s.gunEtiket, { color: renk.yesilKoyu }]}>{t.saat ? "SAAT" : "GÜN"}</Text>
+              <Text style={[s.gunDeger, { color: renk.yesilKoyu }]}>
+                {t.saat ? String(t.saat).replace(".", ",") : String(t.gun).replace(".", ",")}
+              </Text>
+              {t.saat && t.baslangicSaat ? (
+                <Text style={[s.gunEtiket, { color: renk.yesilKoyu, textTransform: "none" }]}>
+                  {t.baslangicSaat}–{t.bitisSaat}
+                </Text>
+              ) : null}
             </View>
 
             <View style={s.gunKutu}>
