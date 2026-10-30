@@ -31,6 +31,7 @@ import {
 import dayjs, { Dayjs } from "dayjs";
 import {
   ArrowDownRight,
+  BarChart3,
   ArrowUpRight,
   Clock,
   RefreshCw,
@@ -42,6 +43,7 @@ import {
 
 import Tablo from "./Tablo";
 import GeriDonenler from "./GeriDonenler";
+import Turnover from "./Turnover";
 import PersonelResmi from "./PersonelResmi";
 import { api } from "./api";
 import { RENK } from "./sabitler";
@@ -917,6 +919,16 @@ export default function Sirkulasyon() {
       )}
               </>
             ),
+          },
+          {
+            key: "turnover",
+            label: (
+              <Space size={6}>
+                <BarChart3 size={15} strokeWidth={2} />
+                Turnover
+              </Space>
+            ),
+            children: <Turnover />,
           },
           {
             key: "geridonen",

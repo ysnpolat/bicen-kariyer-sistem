@@ -15,7 +15,7 @@ namespace BicenKariyer.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PersonelController : ControllerBase
+public partial class PersonelController : ControllerBase
 {
     private readonly VeritabaniServisi _vt;
     private readonly AyarServisi _ayar;
