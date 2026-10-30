@@ -5,6 +5,42 @@ color 0A
 cd /d "%~dp0"
 
 REM ==========================================================================
+REM  DEPODAN GUNCELLE
+REM  Bu klasor bir git deposuysa once GitHub'daki son surum cekilir.
+REM  Zip kopyalama yerine: GitHub'a push edilen kod -> git pull -> derle.
+REM  Depo degilse (eski zip yontemi) bu adim atlanir.
+REM ==========================================================================
+if exist ".git" (
+    where git >nul 2>&1
+    if errorlevel 1 (
+        echo [HATA] Bu klasor bir git deposu ama git kurulu degil.
+        echo        https://git-scm.com adresinden Git for Windows kurunuz.
+        pause
+        exit /b 1
+    )
+    echo [GIT] GitHub'dan son surum cekiliyor...
+    git fetch origin main
+    if errorlevel 1 (
+        echo [HATA] GitHub'a ulasilamadi ^(git fetch^). Internet ya da giris sorunu.
+        pause
+        exit /b 1
+    )
+    git merge --ff-only origin/main
+    if errorlevel 1 (
+        echo.
+        echo [HATA] Yerel degisiklik var, depo ile birlestirilemedi.
+        echo        Sunucudaki dosyalari elle degistirdiyseniz once
+        echo        "git status" ile bakip "git checkout -- ." ile geri aliniz,
+        echo        ya da degisikligi depoya aldiriniz.
+        pause
+        exit /b 1
+    )
+    for /f "tokens=*" %%v in ('git log -1 --pretty^=format:"%%h  %%s  ^(%%ci^)"') do echo      Surum: %%v
+    echo      Tamam.
+    echo.
+)
+
+REM ==========================================================================
 REM  AYARLAR - Gerekirse bu iki satiri duzenleyiniz
 REM ==========================================================================
 set SITE_KOK=C:\inetpub\vhosts\bicen.com.tr\kariyer.bicen.com.tr
