@@ -9,9 +9,9 @@
  * menüsüyle gösterilir; sunucu da bu rolü /api/Hukuk dışına kapatır.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Input, Select, Spin } from "antd";
+import { DatePicker, Input, Select, Spin } from "antd";
 import {
-  CalendarDays, FileStack, FolderPlus, Inbox, LayoutDashboard, LogOut, PenLine, Scale, Search, ShieldCheck,
+  CalendarDays, FileStack, FolderPlus, Inbox, Landmark, LayoutDashboard, LogOut, PenLine, Scale, Search, ShieldCheck,
 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
@@ -22,6 +22,7 @@ import {
 import PostaKutusu from "./HukukYazisma";
 import DosyaSayfasi, { DosyaFormu } from "./HukukDosya";
 import HukukYetkiler from "./HukukYetkiler";
+import { IcraBen, IcraDosyaFormu, IcraDosyaSayfasi, IcraOzetKarti, IcraSayfasi } from "./HukukIcra";
 import "./HukukMasasi.css";
 
 dayjs.locale("tr");
@@ -37,7 +38,7 @@ interface MasaOzet {
 }
 interface DosyaSatir { dosya: Dosya; vekiller: string[] }
 
-type Gorunum = { ad: "masa" | "dosyalar" | "ajanda" | "yazisma" | "yetkiler" } | { ad: "dosya"; id: number };
+type Gorunum = { ad: "masa" | "dosyalar" | "ajanda" | "yazisma" | "yetkiler" | "icra" } | { ad: "dosya"; id: number } | { ad: "icraDosya"; id: number };
 
 /* ------------------------------------------------------------------ */
 
@@ -65,7 +66,7 @@ function DosyaTablosu({ l, ac }: { l: DosyaSatir[]; ac: (id: number) => void }) 
 
 /* ------------------------------------------------------------------ */
 
-function Masa({ ben, git, yaziAc, yeniDosya }: { ben: Ben; git: (g: Gorunum) => void; yaziAc: (id: number) => void; yeniDosya: () => void }) {
+function Masa({ ben, git, yaziAc, yeniDosya, icraVar }: { ben: Ben; git: (g: Gorunum) => void; yaziAc: (id: number) => void; yeniDosya: () => void; icraVar: boolean }) {
   const [o, setO] = useState<MasaOzet | null>(null);
   const [ajanda, setAjanda] = useState<AjandaKaydi[]>([]);
   const [yazilar, setYazilar] = useState<YaziOzet[]>([]);
@@ -144,10 +145,14 @@ function Masa({ ben, git, yaziAc, yeniDosya }: { ben: Ben; git: (g: Gorunum) => 
         </div>
       </div>
 
-      <div className="hk-pk">
-        <h3>Açık dosyalar <a onClick={() => git({ ad: "dosyalar" })}>Tüm dosyalar</a></h3>
-        {dosyalar.length === 0 ? <div className="hk-bos"><Scale /><b>Açık dosya yok</b></div>
-          : <DosyaTablosu l={dosyalar} ac={(id) => git({ ad: "dosya", id })} />}
+      {/* İcra / maaş haczi özeti (30.10.2026): yalnız icra yetkisi olana; danışman görmez */}
+      <div className={icraVar ? "hk-izg" : undefined}>
+        <div className="hk-pk">
+          <h3>Açık dosyalar <a onClick={() => git({ ad: "dosyalar" })}>Tüm dosyalar</a></h3>
+          {dosyalar.length === 0 ? <div className="hk-bos"><Scale /><b>Açık dosya yok</b></div>
+            : <DosyaTablosu l={dosyalar} ac={(id) => git({ ad: "dosya", id })} />}
+        </div>
+        {icraVar && <IcraOzetKarti git={() => git({ ad: "icra" })} />}
       </div>
     </>
   );
@@ -160,6 +165,19 @@ function Dosyalar({ ben, ac, yeniDosya, surum }: { ben: Ben; ac: (id: number) =>
   const [tur, setTur] = useState<string | undefined>();
   const [q, setQ] = useState("");
   const [v, setV] = useState<{ dosyalar: DosyaSatir[]; sayilar: { acik: number; kapandi: number } } | null>(null);
+  /* Ek süzgeçler (30.10.2026): avukat, şube, dava tarihi aralığı; sunucudan gelen liste üzerinde */
+  const [vekil, setVekil] = useState<string | undefined>();
+  const [sube, setSube] = useState<string | undefined>();
+  const [aralik, setAralik] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null);
+  const [risk, setRisk] = useState<number | undefined>();
+  const vekiller = useMemo(() => [...new Set((v?.dosyalar ?? []).flatMap((x) => [...x.vekiller, x.dosya.karsiVekil ?? ""]).filter(Boolean))].sort(), [v]);
+  const subeler = useMemo(() => [...new Set((v?.dosyalar ?? []).map((x) => x.dosya.sube ?? "").filter(Boolean))].sort(), [v]);
+  const suzulmus = useMemo(() => (v?.dosyalar ?? []).filter((x) =>
+    (!vekil || x.vekiller.includes(vekil) || x.dosya.karsiVekil === vekil)
+    && (!sube || x.dosya.sube === sube)
+    && (risk === undefined || x.dosya.risk === risk)
+    && (!aralik?.[0] || (x.dosya.davaTarihi && !dayjs(x.dosya.davaTarihi).isBefore(aralik[0], "day")))
+    && (!aralik?.[1] || (x.dosya.davaTarihi && !dayjs(x.dosya.davaTarihi).isAfter(aralik[1], "day")))), [v, vekil, sube, risk, aralik]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -187,11 +205,16 @@ function Dosyalar({ ben, ac, yeniDosya, surum }: { ben: Ben; ac: (id: number) =>
           options={ben.turler.map((t) => ({ value: t.kod, label: t.ad }))} />
         <Input prefix={<Search size={15} color="#9a9eab" />} placeholder="Taraf, esas no, mahkeme, şube" value={q}
           onChange={(e) => setQ(e.target.value)} allowClear style={{ maxWidth: 320 }} />
+        <Select allowClear showSearch placeholder="Avukat / vekil" value={vekil} onChange={setVekil} style={{ width: 190 }} options={vekiller.map((x) => ({ value: x, label: x }))} />
+        <Select allowClear showSearch placeholder="Şube" value={sube} onChange={setSube} style={{ width: 170 }} options={subeler.map((x) => ({ value: x, label: x }))} />
+        <Select allowClear placeholder="Risk" value={risk} onChange={setRisk} style={{ width: 110 }} options={[{ value: 1, label: "Düşük" }, { value: 2, label: "Orta" }, { value: 3, label: "Yüksek" }]} />
+        <DatePicker.RangePicker value={aralik as any} onChange={(r) => setAralik(r as any)} format="DD.MM.YYYY" placeholder={["Dava başlangıç", "bitiş"]} allowEmpty={[true, true]} />
+        {v && suzulmus.length !== v.dosyalar.length && <small style={{ color: "var(--s)" }}>{suzulmus.length} / {v.dosyalar.length} dosya</small>}
       </div>
       <div className="hk-pk">
-        {v === null ? <div className="hk-bos"><Spin /></div> : v.dosyalar.length === 0
+        {v === null ? <div className="hk-bos"><Spin /></div> : suzulmus.length === 0
           ? <div className="hk-bos"><Scale /><b>Dosya bulunamadı</b>{ben.danisman ? "Size erişim verilen dosya yok." : "Filtreyi değiştirin ya da yeni dosya açın."}</div>
-          : <DosyaTablosu l={v.dosyalar} ac={ac} />}
+          : <DosyaTablosu l={suzulmus} ac={ac} />}
       </div>
     </>
   );
@@ -264,10 +287,17 @@ export default function HukukMasasi({ bagimsiz = false, cikis }: { bagimsiz?: bo
   const [surum, setSurum] = useState(0);
   const [okunmamis, setOkunmamis] = useState(0);
   const [dosyaSecenek, setDosyaSecenek] = useState<{ id: number; ad: string }[]>([]);
+  /* İcra / maaş haczi (30.10.2026): yetkisi sunucudan; danışmana hiç sorulmaz */
+  const [icraBen, setIcraBen] = useState<IcraBen | null>(null);
+  const [yeniIcra, setYeniIcra] = useState(false);
 
   useEffect(() => {
     api.al<Ben>("/api/Hukuk/Ben").then((b) => b.yetkili ? setBen(b) : setHata("Hukuk masasına erişiminiz yok.")).catch((e) => setHata(e.message));
   }, []);
+  useEffect(() => {
+    if (!ben || ben.danisman) return;
+    api.al<IcraBen>("/api/Hukuk/Icra/Ben").then((b) => setIcraBen(b.yetkili ? b : null)).catch(() => setIcraBen(null));
+  }, [ben]);
   const sayac = useCallback(() => {
     api.al<{ okunmamis: number }>("/api/Hukuk/Masa").then((d) => setOkunmamis(d.okunmamis ?? 0)).catch(() => {});
   }, []);
@@ -281,7 +311,7 @@ export default function HukukMasasi({ bagimsiz = false, cikis }: { bagimsiz?: bo
   }, [ben, surum, sayac]);
 
   const git = (y: Gorunum) => {
-    if (y.ad === "dosya" && g.ad !== "dosya") setOnceki(g);
+    if ((y.ad === "dosya" || y.ad === "icraDosya") && g.ad !== "dosya" && g.ad !== "icraDosya") setOnceki(g);
     if (y.ad !== "yazisma") setYazi(null);
     setG(y);
     window.scrollTo?.({ top: 0 });
@@ -297,13 +327,16 @@ export default function HukukMasasi({ bagimsiz = false, cikis }: { bagimsiz?: bo
     { ad: "dosyalar", etiket: "Dosyalar", ikon: FileStack },
     { ad: "ajanda", etiket: "Ajanda", ikon: CalendarDays },
     { ad: "yazisma", etiket: "Resmi yazışma", ikon: Inbox, em: okunmamis },
+    ...(icraBen ? [{ ad: "icra" as const, etiket: "İcra / haciz", ikon: Landmark }] : []),
     ...(!ben.danisman ? [{ ad: "yetkiler" as const, etiket: "Yetkiler", ikon: ShieldCheck }] : []),
   ];
-  const aktif = g.ad === "dosya" ? "dosyalar" : g.ad;
+  const aktif = g.ad === "dosya" ? "dosyalar" : g.ad === "icraDosya" ? "icra" : g.ad;
 
   const icerik = (
     <div className="hk-ana">
-      {g.ad === "masa" && <Masa ben={ben} git={git} yaziAc={yaziAc} yeniDosya={() => setYeniDosya(true)} />}
+      {g.ad === "masa" && <Masa ben={ben} git={git} yaziAc={yaziAc} yeniDosya={() => setYeniDosya(true)} icraVar={!!icraBen} />}
+      {g.ad === "icra" && icraBen && <IcraSayfasi icraBen={icraBen} ac={(id) => git({ ad: "icraDosya", id })} surum={surum} yeniDosya={() => setYeniIcra(true)} />}
+      {g.ad === "icraDosya" && icraBen && <IcraDosyaSayfasi key={g.id} id={g.id} icraBen={icraBen} geri={() => git({ ad: "icra" })} degisti={() => setSurum((s) => s + 1)} />}
       {g.ad === "dosyalar" && <Dosyalar ben={ben} ac={(id) => git({ ad: "dosya", id })} yeniDosya={() => setYeniDosya(true)} surum={surum} />}
       {g.ad === "dosya" && <DosyaSayfasi key={g.id} id={g.id} ben={ben} geri={() => git(onceki.ad === "dosya" ? { ad: "dosyalar" } : onceki)}
         yaziAc={yaziAc} dosyalar={dosyaSecenek} degisti={() => setSurum((s) => s + 1)} />}
@@ -312,6 +345,8 @@ export default function HukukMasasi({ bagimsiz = false, cikis }: { bagimsiz?: bo
       {g.ad === "yetkiler" && <HukukYetkiler ben={ben} dosyaAc={(id) => git({ ad: "dosya", id })} />}
       <DosyaFormu ben={ben} acik={yeniDosya} kapat={() => setYeniDosya(false)}
         kaydedildi={(id) => { setYeniDosya(false); setSurum((s) => s + 1); git({ ad: "dosya", id }); }} />
+      {icraBen && <IcraDosyaFormu icraBen={icraBen} acik={yeniIcra} kapat={() => setYeniIcra(false)}
+        kaydedildi={(id) => { setYeniIcra(false); setSurum((s) => s + 1); git({ ad: "icraDosya", id }); }} />}
     </div>
   );
 

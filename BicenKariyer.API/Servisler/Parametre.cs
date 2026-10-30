@@ -52,6 +52,7 @@ public static class Parametre
         new("mobil", "Biçen360", "Kurulum daveti SMS'leri ve güncelleme hatırlatması"),
         new("bildirim", "Toplu bildirim", "Yüzlerce kişiye giden bildirimin zamana yayılması"),
         new("gorev", "Otomatik görevler", "Arka planda çalışan görevlerin saatleri"),
+        new("icra", "İcra / maaş haczi", "Kesinti oranı ve tebligat cevap süresi"),
     };
 
     /// <summary>Tipler: sayi, evethayir, saat (SS:dd), saatler (SS:dd,SS:dd), sicil, surum (1.6)</summary>
@@ -173,6 +174,14 @@ public static class Parametre
             "sayi", "8", "saat", 0, 23, null, "İzin otomatik onay, mazeret belgesi"),
         new("gorev.bitisSaat", "gorev", "Görevler en geç",
             "Bu saatten sonra çalışmaz (gece bildirim gitmez).", "sayi", "21", "saat", 1, 24, null, "İzin otomatik onay, mazeret belgesi"),
+
+        /* İcra / maaş haczi (30.10.2026) */
+        new("icra.kesintiYuzde", "icra", "Maaş haczi kesinti oranı",
+            "Nafaka dışındaki icra dosyaları için net maaşın yüzde kaçı kesilir (kanuni oran ¼ = 25). Nafaka aylık tutarının tamamı ayrıca kesilir.",
+            "sayi", "25", "%", 1, 100, null, "İcra kesinti hesabı"),
+        new("icra.cevapGun", "icra", "Haciz ihbarnamesi cevap süresi",
+            "Tebliğden itibaren kaç gün içinde icra dairesine cevap yazılır (İİK 89/1: 7 gün). Süre yaklaşınca ve geçince hukuk ekibine bildirim gider.",
+            "sayi", "7", "gün", 1, 30, null, "İcra hatırlatma görevi"),
     };
 
     private static readonly Dictionary<string, Tanim> TanimSozlugu =

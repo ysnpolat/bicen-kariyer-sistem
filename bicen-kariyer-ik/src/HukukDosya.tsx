@@ -188,6 +188,12 @@ export default function DosyaSayfasi({ id, ben, geri, yaziAc, dosyalar, degisti 
   const yazabilir = v.hak === "tam" || v.hak === "standart";
   const sonraki = v.olaylar.filter((o) => !o.tamam && o.tur !== "surec" && dayjs(o.tarih).isAfter(dayjs().startOf("day").subtract(1, "second")))[0];
   const sekmeler = SEKMELER.filter((s) => (s.kod !== "erisim" || ben.yetki === "tam") && (s.kod !== "gunluk" || ben.yetki === "tam"));
+  /* Son hareketler (30.10.2026): süreç kayıtları, yazılar ve belgeler tek zaman çizelgesinde */
+  const hareketler = [
+    ...v.olaylar.map((o) => ({ k: `o${o.id}`, tarih: o.olusturma ?? o.tarih, sinif: OLAY_RENK[o.tur] ?? "e-gri", etiket: o.turAdi, baslik: o.baslik, alt: o.ekleyenAd ?? "", tikla: () => setSekme("surec") })),
+    ...v.yazilar.map((y) => ({ k: `y${y.id}`, tarih: y.tarih, sinif: "e-alt", etiket: "Yazı", baslik: y.konu, alt: `${y.kayitNo} · ${y.gonderenAd}`, tikla: () => yaziAc(y.id) })),
+    ...v.belgeler.filter((b) => !b.yaziId).map((b) => ({ k: `b${b.id}`, tarih: b.tarih, sinif: "e-mav", etiket: "Belge", baslik: b.ad, alt: b.yukleyenAd ?? "", tikla: () => setSekme("belge") })),
+  ].sort((a, b) => dayjs(b.tarih).valueOf() - dayjs(a.tarih).valueOf()).slice(0, 8);
 
   const belgeYukle = async (l: File[]) => {
     if (!l.length) return;
@@ -312,6 +318,23 @@ export default function DosyaSayfasi({ id, ben, geri, yaziAc, dosyalar, degisti 
                 </div>
               ))}
               {v.olaylar.filter((o) => !o.tamam && o.tur !== "surec").length === 0 && <small style={{ color: "var(--s)" }}>Bekleyen süre yok.</small>}
+            </div>
+            <div className="hk-pk">
+              <h3>Son hareketler <small>{hareketler.length} kayıt</small></h3>
+              {hareketler.length === 0 ? <small style={{ color: "var(--s)" }}>Henüz hareket yok.</small> : (
+                <div className="hk-cz">
+                  {hareketler.map((h) => (
+                    <div key={h.k} className="hk-ce" style={{ paddingBottom: 10, cursor: "pointer" }} onClick={h.tikla}>
+                      <i className="b" />
+                      <div>
+                        <span className={"hk-etiket " + h.sinif}>{h.etiket}</span>
+                        <b style={{ marginTop: 3, fontSize: 13 }}>{h.baslik}</b>
+                        <small>{tarihYaz(h.tarih, true)}{h.alt ? ` · ${h.alt}` : ""}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             {v.erisim && v.erisim.length > 0 && (
               <div className="hk-pk">

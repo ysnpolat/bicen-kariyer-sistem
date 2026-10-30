@@ -84,6 +84,7 @@ import Ariza from "./src/ekranlar/Ariza";
 import RakipFiyat from "./src/ekranlar/RakipFiyat";
 import FiyatKontrol from "./src/ekranlar/FiyatKontrol";
 import Avanslarim from "./src/ekranlar/Avanslarim";
+import Icralarim from "./src/ekranlar/Icralarim";
 import Envanter from "./src/ekranlar/Envanter";
 import Raporlar from "./src/ekranlar/Raporlar";
 import ChecklistDoldur from "./src/ekranlar/ChecklistDoldur";
@@ -264,6 +265,8 @@ function Uygulama({ navigation }) {
     vardiyaplani: { rota: "VardiyaPlani", ekran: VardiyaPlani, ad: "Vardiya Planı", simge: "takvim" },
     ekibim: { rota: "Ekibim", ekran: Ekibim, ad: "Ekibim", simge: "kisi" },
     avans: { rota: "Avans", ekran: Avanslarim, ad: "Avanslarım", simge: "para" },
+    /* İcralarım (1.11): sunucu yalnız icra dosyası olana ya da portaldan açılana gönderir */
+    icralarim: { rota: "Icralarim", ekran: Icralarim, ad: "İcralarım", simge: "belge" },
     /* SKT Kontrol (1.9): Biçen360 modülü, portaldan açılıyor */
     skt: { rota: "Skt", ekran: Skt, ad: "SKT Kontrol", simge: "takvim" },
 

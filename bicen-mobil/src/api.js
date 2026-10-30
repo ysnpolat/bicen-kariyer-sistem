@@ -434,6 +434,8 @@ export const performansAl = (yil, ay) =>
       : "/api/Mobil/Performans"
   );
 export const primAl = () => api.al("/api/Mobil/Prim");
+/** İcralarım (1.11): kişinin kendi icra / nafaka dosyaları; sicil jetondan */
+export const icralarimAl = () => api.al("/api/Mobil/Icralarim");
 export const duyuruAl = () => api.al("/api/Mobil/Duyurular");
 
 /** Kişinin görebileceği modüller; yetki pozisyona göre verilir */

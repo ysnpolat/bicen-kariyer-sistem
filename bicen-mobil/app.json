@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bicen360",
     "slug": "bicen360",
-    "version": "1.10",
+    "version": "1.11",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",

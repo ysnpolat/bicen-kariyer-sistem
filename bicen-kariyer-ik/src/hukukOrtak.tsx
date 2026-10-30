@@ -18,7 +18,7 @@ export interface Dosya {
   talepTutar: number | null; tutarGizli: boolean; ozet: string | null; durum: "acik" | "kapandi";
   sonuc: string | null; kapanisTarihi: string | null; olusturma: string; sonraki: Sonraki | null;
 }
-export interface Olay { id: number; tur: string; turAdi: string; tarih: string; baslik: string; aciklama: string | null; tamam: boolean; ekleyenAd: string | null }
+export interface Olay { id: number; tur: string; turAdi: string; tarih: string; baslik: string; aciklama: string | null; tamam: boolean; ekleyenAd: string | null; olusturma?: string }
 export interface Belge { id: number; ad: string; tur: string | null; boyut: number; uzanti: string; yukleyenAd: string | null; tarih: string; yaziId: number | null; dosyaId: number | null }
 export interface YaziOzet {
   id: number; kayitNo: string; konu: string; ozet: string; gonderenAd: string; gonderenKurum: string | null;

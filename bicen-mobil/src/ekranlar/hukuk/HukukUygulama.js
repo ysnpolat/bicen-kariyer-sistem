@@ -5,14 +5,15 @@
  * bu ekranla kullanır. Biçen hukuk ekibindeki personel de ana sayfadaki
  * "Hukuk masası" kartıyla buraya geçer, "Diğer"den personel görünümüne döner.
  *
- * Sekmeler: Masa · Dosyalar · Ajanda · Yazışma · Diğer. Alt menü sabit ve
+ * Sekmeler: Masa · Dosyalar · (İcra) · Ajanda · Yazışma · Diğer. İcra sekmesi
+ * (30.10.2026) yalnız icra yetkisi olan iç ekipte; danışman göremez. Alt menü sabit ve
  * içerikle kaymaz; klavye açıkken gizlenir ki düğme ve yazıların üstüne
  * binmesin. Yazı yazma ekranında Gönder düğmesi üst çubukta durur.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator, Alert, BackHandler, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl,
-  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -28,6 +29,7 @@ import { useKlavye, klavyePayi } from "../../klavye";
 import {
   basHarf, boyut, gunAy, hukukAjanda, hukukArsiv, hukukBelgeAdresi, hukukBelgeYukle, hukukBen, hukukDosya, hukukDosyalar,
   hukukKisiler, hukukMasa, hukukOlayEkle, hukukOlayGuncelle, hukukYazi, hukukYaziGonder, hukukYazilar, kalan, kisaZaman, saat, tarih,
+  icraAyrilisYazisi, icraBelgeAdresi, icraBelgeYukle, icraBen, icraCevapYazisi, icraDosya, icraDosyalar, icraOdendi, icraOlayEkle, icraOzet, lira,
 } from "../../hukukApi";
 
 /* ------------------------------------------------------------------ renk */
@@ -202,18 +204,27 @@ function DosyaKarti({ x, tikla }) {
 
 /* ================================================================ Masa */
 
-function Masa({ ben, ac, yaziAc, git }) {
+function Masa({ ben, ac, yaziAc, git, icraVar, icraAc }) {
   const [o, setO] = useState(null);
   const [ajanda, setAjanda] = useState([]);
   const [yazilar, setYazilar] = useState([]);
   const [yenileniyor, setYenileniyor] = useState(false);
+  /* İcra özeti ve cevap bekleyen tebligatlar (30.10.2026); yalnız icra yetkisi olana */
+  const [io, setIo] = useState(null);
+  const [tebligatlar, setTebligatlar] = useState([]);
 
   const yukle = useCallback(async () => {
-    const [m, a, y] = await Promise.allSettled([hukukMasa(), hukukAjanda(14), hukukYazilar("gelen")]);
+    const [m, a, y, i, t] = await Promise.allSettled([
+      hukukMasa(), hukukAjanda(14), hukukYazilar("gelen"),
+      icraVar ? icraOzet() : Promise.reject(), icraVar ? icraDosyalar("acik", "", "icra") : Promise.reject(),
+    ]);
     if (m.status === "fulfilled") setO(m.value);
     if (a.status === "fulfilled") setAjanda((a.value?.olaylar ?? []).filter((x) => !x.tamam).slice(0, 5));
     if (y.status === "fulfilled") setYazilar((y.value?.yazilar ?? []).slice(0, 4));
-  }, []);
+    if (i.status === "fulfilled") setIo(i.value);
+    if (t.status === "fulfilled")
+      setTebligatlar((t.value?.dosyalar ?? []).filter((d) => d.cevapSuresi && !d.cevapTarihi).sort((x, z) => new Date(x.cevapSuresi) - new Date(z.cevapSuresi)).slice(0, 4));
+  }, [icraVar]);
   useEffect(() => { yukle(); }, [yukle]);
 
   const s = new Date().getHours();
@@ -263,6 +274,30 @@ function Masa({ ben, ac, yaziAc, git }) {
           {yazilar.length === 0 ? <Text style={st.kucuk}>Gelen yazı yok.</Text>
             : yazilar.map((y) => <YaziSatiri key={y.id} y={y} tikla={() => yaziAc(y.id)} />)}
         </View>
+
+        {icraVar ? (
+          <>
+            <Baslik2 metin="İcra / maaş haczi" tikla={() => git("icra")} />
+            <View style={st.k4}>
+              {[["Açık icra", io?.icra], ["Nafaka", io?.nafaka], ["Cevap süresi", io ? io.cevapGecti + io.cevapYakin : null, io?.cevapGecti ? H.kir : null], ["Personel", io?.personel]].map(([a, v, r]) => (
+                <Pressable key={a} style={st.k4k} onPress={() => git("icra")}>
+                  <Text style={[st.k4b, r && { color: r }]}>{v ?? "–"}</Text><Text style={st.k4s}>{a}</Text>
+                </Pressable>
+              ))}
+            </View>
+            {io ? <Text style={[st.kucuk, { marginLeft: 2 }]}>Bu ay kesinti {lira(io.buAyKesinti)}{io.buAyOdenmemis ? ` · ${io.buAyOdenmemis} ödeme bekliyor` : ""}{io.ayrilan ? ` · ${io.ayrilan} ayrılan personel` : ""}</Text> : null}
+            {tebligatlar.map((d) => (
+              <Pressable key={d.id} onPress={() => icraAc(d.id)} style={st.olay}>
+                <View style={[st.gun, { backgroundColor: H.kirA }]}><Text style={[st.gunB, { color: H.kir, fontSize: 18 }]}>!</Text><Text style={[st.gunA, { color: H.kir }]}>cevap</Text></View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={st.olayB} numberOfLines={1}>{d.personelAd ?? d.sicil}</Text>
+                  <Text style={st.kucuk} numberOfLines={1}>{[d.icraDairesi, d.esasNo].filter(Boolean).join(" ")} · tebliğ {tarih(d.tebligTarihi)}</Text>
+                </View>
+                <Sayac t={d.cevapSuresi} />
+              </Pressable>
+            ))}
+          </>
+        ) : null}
       </View>
     </ScrollView>
   );
@@ -272,12 +307,15 @@ function Masa({ ben, ac, yaziAc, git }) {
 
 function Dosyalar({ ben, ac }) {
   const [durum, setDurum] = useState("acik");
+  const [tur, setTur] = useState("");
   const [q, setQ] = useState("");
   const [l, setL] = useState(null);
   useEffect(() => {
-    const t = setTimeout(() => hukukDosyalar(durum, q.trim()).then((d) => setL(d?.dosyalar ?? [])).catch(() => setL([])), q ? 350 : 0);
+    const t = setTimeout(() => hukukDosyalar(durum, q.trim(), tur).then((d) => setL(d?.dosyalar ?? [])).catch(() => setL([])), q ? 350 : 0);
     return () => clearTimeout(t);
-  }, [durum, q]);
+  }, [durum, q, tur]);
+  /* Yaklaşan işi olanlar önce; süzgeç (30.10.2026): tür */
+  const yakin = (l ?? []).filter((x) => x.dosya.sonraki && kalan(x.dosya.sonraki.tarih).acil).length;
   return (
     <View style={{ flex: 1 }}>
       <Bar baslik="Dosyalar" />
@@ -287,6 +325,8 @@ function Dosyalar({ ben, ac }) {
           <TextInput value={q} onChangeText={setQ} placeholder="Taraf, esas no, mahkeme" placeholderTextColor={H.s2} style={st.araG} returnKeyType="search" />
         </View>
         <Segment secenekler={[["acik", "Açık"], ["kapandi", "Kapanan"], ["hepsi", "Tümü"]]} deger={durum} sec={setDurum} />
+        <Segment secenekler={[["", "Tüm türler"], ...(ben.turler ?? []).map((t) => [t.kod, t.ad])]} deger={tur} sec={setTur} />
+        {l && l.length > 0 ? <Text style={st.kucuk}>{l.length} dosya{yakin ? ` · ${yakin} dosyada bugün / yarın iş var` : ""}</Text> : null}
         {l === null ? <ActivityIndicator color={H.m} style={{ marginTop: 30 }} />
           : l.length === 0 ? <Bos baslik="Dosya yok" metin={ben.danisman ? "Size erişim verilen dosya bulunmuyor." : "Bu filtrede dosya yok."} />
           : l.map((x) => <DosyaKarti key={x.dosya.id} x={x} tikla={() => ac(x.dosya.id)} />)}
@@ -789,6 +829,306 @@ function DosyaSayfasi({ id, ben, geri, yaziAc, yaz }) {
   );
 }
 
+
+/* ======================================================= İcra / haciz */
+
+const ICRA_DURUM = { acik: [H.yesA, H.yes], askida: [H.turA, H.tur], kapandi: [H.gri, H.s], feragat: [H.morA, H.mor], iptal: [H.gri, H.s] };
+const ICRA_OLAY = {
+  tebligat: [H.kirA, H.kir], cevap: [H.mavA, H.mav], kesinti: [H.aA, H.a2], odeme: [H.yesA, H.yes], borc: [H.turA, H.tur], sira: [H.morA, H.mor],
+  askiya: [H.turA, H.tur], kapandi: [H.gri, H.s], feragat: [H.morA, H.mor], ayrilis: [H.kirA, H.kir], not: [H.gri, H.s],
+};
+
+function SiraRozeti({ d }) {
+  if (d.durum !== "acik") return <Etiket metin={d.durumAdi} renkler={ICRA_DURUM[d.durum]} />;
+  if (d.tur === "nafaka") return <Etiket metin="Nafaka · öncelikli" renkler={[H.kirA, H.kir]} />;
+  return (
+    <View style={[st.sira, d.sira === 1 && { backgroundColor: H.m }]}>
+      <Text style={[st.siraT, d.sira === 1 && { color: "#fff" }]}>{d.sira || "—"}</Text>
+    </View>
+  );
+}
+
+function IcraKarti({ d, tikla }) {
+  const nafaka = d.tur === "nafaka";
+  const cevap = d.tur === "icra" && d.cevapSuresi && !d.cevapTarihi ? kalan(d.cevapSuresi) : null;
+  return (
+    <Pressable onPress={tikla} style={st.dosya}>
+      <View style={[st.dosyaCizgi, { backgroundColor: nafaka ? H.kir : H.a }]} />
+      <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+        <SiraRozeti d={d} />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={st.dosyaAd} numberOfLines={1}>{d.personelAd ?? d.sicil}</Text>
+          <Text style={st.kucuk} numberOfLines={1}>{d.alacakli ?? d.turAdi} · {[d.icraDairesi, d.esasNo].filter(Boolean).join(" ") || d.dosyaNo}</Text>
+        </View>
+      </View>
+      <View style={st.dosyaAlt}>
+        <Text style={st.kucuk}>{nafaka ? `${lira(d.aylikTutar)} / ay` : `Borç ${lira(d.toplamBorc)} · kalan `}{nafaka ? "" : <Text style={{ fontWeight: "800", color: H.t }}>{lira(d.kalan)}</Text>}</Text>
+        {d.ayrilisBildirildi ? <Etiket metin="Ayrıldı" renkler={[H.kirA, H.kir]} />
+          : cevap ? <Text style={{ fontWeight: "800", fontSize: 12, color: cevap.acil ? H.kir : cevap.yakin ? H.tur : H.s }}>Cevap: {cevap.metin}</Text>
+          : <Text style={st.kucuk}>tebliğ {tarih(d.tebligTarihi)}</Text>}
+      </View>
+    </Pressable>
+  );
+}
+
+function IcraListesi({ icra, ac }) {
+  const [durum, setDurum] = useState("acik");
+  const [tur, setTur] = useState("");
+  const [q, setQ] = useState("");
+  const [l, setL] = useState(null);
+  const [o, setO] = useState(null);
+  useEffect(() => { icraOzet().then(setO).catch(() => {}); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => icraDosyalar(durum, q.trim(), tur).then((d) => setL(d?.dosyalar ?? [])).catch(() => setL([])), q ? 350 : 0);
+    return () => clearTimeout(t);
+  }, [durum, q, tur]);
+  return (
+    <View style={{ flex: 1 }}>
+      <Bar baslik="İcra / maaş haczi" />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={st.ic} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        <View style={st.k4}>
+          {[["Açık icra", o?.icra], ["Nafaka", o?.nafaka], ["Cevap süresi", o ? o.cevapGecti + o.cevapYakin : null, o?.cevapGecti ? H.kir : null], ["Ayrılan", o?.ayrilan, o?.ayrilan ? H.kir : null]].map(([a, v, r]) => (
+            <View key={a} style={st.k4k}><Text style={[st.k4b, r && { color: r }]}>{v ?? "–"}</Text><Text style={st.k4s}>{a}</Text></View>
+          ))}
+        </View>
+        {o ? <Text style={st.kucuk}>Bu ay kesinti {lira(o.buAyKesinti)} · açık borç {lira(o.toplamBorc)} · oran %{Math.round((icra?.oran ?? 0.25) * 100)}</Text> : null}
+        <View style={st.ara}>
+          <Text style={{ color: H.s2 }}>⌕</Text>
+          <TextInput value={q} onChangeText={setQ} placeholder="Personel, sicil, alacaklı, esas no" placeholderTextColor={H.s2} style={st.araG} returnKeyType="search" />
+        </View>
+        <Segment secenekler={[["acik", "Açık"], ["askida", "Askıda"], ["kapandi", "Kapanan"], ["hepsi", "Tümü"]]} deger={durum} sec={setDurum} />
+        <Segment secenekler={[["", "Tümü"], ["icra", "İcra"], ["nafaka", "Nafaka"]]} deger={tur} sec={setTur} />
+        {l === null ? <ActivityIndicator color={H.m} style={{ marginTop: 30 }} />
+          : l.length === 0 ? <Bos baslik="İcra dosyası yok" metin="Bu süzgeçte dosya bulunmuyor. Yeni dosya panelden açılır." />
+          : l.map((d) => <IcraKarti key={d.id} d={d} tikla={() => ac(d.id)} />)}
+        <Text style={st.kucuk}>Kesinti = nafakaların tamamı + net maaşın ¼'ü sıradaki dosyaya. Oranlar Yönetim'den değiştirilebilir; dönem listesi ve Excel panelde.</Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+function IcraDosyaSayfasi({ id, icra, geri }) {
+  const [v, setV] = useState(null);
+  const [hata, setHata] = useState("");
+  const [sekme, setSekme] = useState("ozet");
+  const [yazi, setYazi] = useState(null); // { baslik, metin }
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const yukle = useCallback(() => icraDosya(id).then(setV).catch((e) => setHata(e.message)), [id]);
+  useEffect(() => { yukle(); }, [yukle]);
+  if (hata) return <View style={{ flex: 1 }}><Bar baslik="İcra dosyası" geri={geri} /><Bos baslik="Açılamadı" metin={hata} /></View>;
+  if (!v) return <View style={{ flex: 1 }}><Bar baslik="İcra dosyası" geri={geri} /><ActivityIndicator color={H.m} style={{ marginTop: 40 }} /></View>;
+  const d = v.dosya;
+  const tam = v.hak === "tam";
+  const nafaka = d.tur === "nafaka";
+  const yuzde = !nafaka && d.toplamBorc > 0 ? Math.min(100, Math.round((d.odenen / d.toplamBorc) * 100)) : 0;
+  const cevap = d.tur === "icra" && d.cevapSuresi && !d.cevapTarihi ? kalan(d.cevapSuresi) : null;
+
+  const yaziAc = async (tip) => {
+    try {
+      const r = tip === "cevap" ? await icraCevapYazisi(id) : await icraAyrilisYazisi(id);
+      setYazi({ baslik: tip === "cevap" ? "Haciz ihbarnamesine cevap" : "İşten ayrılış bildirimi", metin: r.metin });
+    } catch (e) { Alert.alert("Yazı", e.message); }
+  };
+  const cevapVerildi = () => Alert.alert("Cevap gönderildi", "Cevap yazısı icra dairesine gönderildi olarak işaretlensin mi?", [
+    { text: "Vazgeç", style: "cancel" },
+    { text: "İşaretle", onPress: async () => { try { await icraOlayEkle(id, { tur: "cevap", baslik: "Cevap yazısı icra dairesine gönderildi" }); yukle(); } catch (e) { Alert.alert("Hata", e.message); } } },
+  ]);
+  const odendi = (k) => Alert.alert("Ödendi", `${k.donemAdi} kesintisi (${lira(k.tutar)}) icra dairesine ödendi mi?`, [
+    { text: "Vazgeç", style: "cancel" },
+    { text: "Ödendi", onPress: async () => { try { const r = await icraOdendi(k.id); if (r?.kapandi) Alert.alert("Dosya kapandı", "Borç tamamlandı; sıra sonraki dosyaya geçti."); yukle(); } catch (e) { Alert.alert("Hata", e.message); } } },
+  ]);
+  const belgeEkle = async () => {
+    try {
+      const r = await dosyaSec({ copyToCacheDirectory: true, multiple: false });
+      const a = r?.assets?.[0];
+      if (!a || r.canceled) return;
+      setYukleniyor(true);
+      await icraBelgeYukle(id, { uri: a.uri, ad: a.name, tip: a.mimeType ?? "application/octet-stream" });
+      await yukle();
+    } catch (e) { Alert.alert("Yüklenemedi", e.message); } finally { setYukleniyor(false); }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.dbas}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }}>
+          <TouchableOpacity onPress={geri} hitSlop={12}><Text style={{ fontSize: 26, color: "#fff", marginTop: -4 }}>‹</Text></TouchableOpacity>
+          <Text style={{ color: "#cdd3e1", fontSize: 13, fontWeight: "600", flex: 1 }}>{d.dosyaNo}</Text>
+        </View>
+        <Text style={st.dbasTur}>{d.turAdi}{d.durum !== "acik" ? ` · ${d.durumAdi.toLocaleUpperCase("tr")}` : ""}</Text>
+        <Text style={st.dbasH} numberOfLines={2}>{d.personelAd ?? d.sicil}</Text>
+        <Text style={{ color: "#b9c1d4", fontSize: 12.5 }} numberOfLines={1}>{[d.sicil, v.personel?.pozisyon, v.personel?.sube].filter(Boolean).join(" · ")}{v.personel && !v.personel.aktif ? " · AYRILDI" : ""}</Text>
+        <View style={st.s3}>
+          <View style={st.s3k}><Text style={st.s3s}>Sıra</Text><Text style={st.s3b} numberOfLines={1}>{d.durum !== "acik" ? d.durumAdi : nafaka ? "Öncelikli" : d.sira ? `${d.sira}.${d.siraElle ? " (elle)" : ""}` : "—"}</Text></View>
+          <View style={st.s3k}><Text style={st.s3s}>{nafaka ? "Aylık" : "Borç"}</Text><Text style={st.s3b} numberOfLines={1}>{lira(nafaka ? d.aylikTutar : d.toplamBorc)}</Text></View>
+          <View style={st.s3k}><Text style={st.s3s}>{nafaka ? "Kesilen" : "Kalan"}</Text><Text style={st.s3b} numberOfLines={1}>{lira(nafaka ? d.kesilen : d.kalan)}</Text></View>
+        </View>
+        {!nafaka ? <View style={st.ilerleme}><View style={[st.ilerlemeDolu, { width: `${yuzde}%` }]} /></View> : null}
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.dsek} contentContainerStyle={{ paddingHorizontal: 10 }}>
+        {[["ozet", "Özet"], ["cizelge", `Çizelge · ${v.olaylar.length}`], ["kesinti", `Kesintiler · ${v.kesintiler.length}`], ["belge", `Belgeler · ${v.belgeler.length}`]].map(([k, a]) => (
+          <TouchableOpacity key={k} onPress={() => setSekme(k)} style={[st.dsekB, sekme === k && st.dsekOn]}>
+            <Text style={[st.dsekT, sekme === k && { color: H.m }]}>{a}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={st.ic}>
+        {sekme === "ozet" ? (
+          <>
+            {d.ayrilisBildirildi ? (
+              <View style={st.uyari}>
+                <Text style={{ fontFamily: SERIF, fontSize: 20, color: H.kir }}>!</Text>
+                <Text style={{ flex: 1, color: "#7d2f1d", fontSize: 12.5 }}>Personel işten ayrıldı; kesinti yapılamaz. İcra dairesine ayrılış yazısı gönderiniz.</Text>
+              </View>
+            ) : cevap && (cevap.acil || cevap.yakin) ? (
+              <View style={st.uyari}>
+                <Text style={{ fontFamily: SERIF, fontSize: 20, color: H.kir }}>!</Text>
+                <Text style={{ flex: 1, color: "#7d2f1d", fontSize: 12.5 }}>Haciz ihbarnamesine cevap süresi: {cevap.metin} ({tarih(d.cevapSuresi)}).</Text>
+              </View>
+            ) : null}
+            <View style={[st.kart, { gap: 10 }]}>
+              <Alan e="Daire" d={d.icraDairesi} />
+              <Alan e="Esas no" d={d.esasNo} />
+              <Alan e="Alacaklı" d={d.alacakli} />
+              <Alan e="Vekil" d={d.alacakliVekili} />
+              <Alan e="Tebliğ" d={tarih(d.tebligTarihi)} />
+              {d.tur === "icra" ? <Alan e="Cevap" d={d.cevapTarihi ? `verildi ${tarih(d.cevapTarihi)}` : d.cevapSuresi ? `${tarih(d.cevapSuresi)} · ${kalan(d.cevapSuresi).metin}` : "—"} vurgu={!!cevap?.acil} /> : null}
+              {d.tur === "icra" ? <Alan e="Ödenen" d={`${lira(d.odenen)} (%${yuzde})`} /> : null}
+              <Alan e="Hesap" d={d.odemeHesabi} />
+              {d.siraElle ? <Alan e="Elle sıra" d={d.siraNotu} /> : null}
+            </View>
+            {v.buAy ? (
+              <>
+                <Baslik2 metin={`Bu ay · ${v.buAy.donemAdi}`} />
+                <View style={[st.kart, { gap: 8 }]}>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <View style={{ flex: 1 }}><Text style={st.s3s2}>Net maaş</Text><Text style={st.deger}>{lira(v.buAy.netMaas)}</Text><Text style={st.kucuk}>{v.buAy.maasKaynak === "elle" ? "elle" : v.buAy.maasKaynak === "bordro" ? "bordro" : "bulunamadı"}</Text></View>
+                    <View style={{ flex: 1 }}><Text style={st.s3s2}>Nafaka</Text><Text style={st.deger}>{lira(v.buAy.nafaka)}</Text></View>
+                    <View style={{ flex: 1 }}><Text style={st.s3s2}>Toplam</Text><Text style={[st.deger, { color: H.m }]}>{lira(v.buAy.toplam)}</Text><Text style={st.kucuk}>{v.buAy.kaydedildi ? "kaydedildi" : "hesap"}</Text></View>
+                  </View>
+                  {v.buAy.satirlar.map((x) => (
+                    <View key={x.dosyaId} style={{ flexDirection: "row", gap: 8, alignItems: "center", borderTopWidth: 1, borderTopColor: H.cizgi2, paddingTop: 8 }}>
+                      {x.tur === "nafaka" ? <Etiket metin="Nafaka" renkler={[H.kirA, H.kir]} /> : <View style={st.sira}><Text style={st.siraT}>{x.sira}</Text></View>}
+                      <View style={{ flex: 1 }}><Text style={{ fontSize: 12.5, fontWeight: "700" }} numberOfLines={1}>{x.alacakli ?? x.dosyaNo}</Text><Text style={st.kucuk}>{x.tur === "nafaka" ? "aylık" : `kalan ${lira(x.kalanSonra)}`}</Text></View>
+                      <Text style={{ fontWeight: "800" }}>{lira(x.tutar)}</Text>
+                    </View>
+                  ))}
+                  {v.buAy.uyarilar.map((u, i) => <Text key={i} style={{ fontSize: 12, color: H.kir }}>{u}</Text>)}
+                  <Text style={st.kucuk}>Kesinti kaydı, net maaş düzeltme ve Excel panelden yapılır.</Text>
+                </View>
+              </>
+            ) : null}
+            <Baslik2 metin="Hazır yazılar" />
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {d.tur === "icra" ? <TouchableOpacity style={[st.dug, st.dugA, { flex: 1 }]} onPress={() => yaziAc("cevap")}><Text style={st.dugAT}>Cevap yazısı</Text></TouchableOpacity> : null}
+              <TouchableOpacity style={[st.dug, st.dugA, { flex: 1 }]} onPress={() => yaziAc("ayrilis")}><Text style={st.dugAT}>Ayrılış yazısı</Text></TouchableOpacity>
+            </View>
+            {tam && d.tur === "icra" && !d.cevapTarihi ? (
+              <TouchableOpacity style={[st.dug, st.dugM]} onPress={cevapVerildi}><Text style={st.dugMT}>Cevap gönderildi olarak işaretle</Text></TouchableOpacity>
+            ) : null}
+            {v.digerDosyalar?.length ? (
+              <>
+                <Baslik2 metin="Personelin diğer dosyaları" />
+                <View style={[st.kart, { gap: 10 }]}>
+                  {v.digerDosyalar.map((x) => (
+                    <View key={x.id} style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+                      <SiraRozeti d={x} />
+                      <View style={{ flex: 1 }}><Text style={{ fontWeight: "700", fontSize: 13 }} numberOfLines={1}>{x.alacakli ?? x.dosyaNo}</Text><Text style={st.kucuk}>{x.tur === "nafaka" ? `${lira(x.aylikTutar)} / ay` : `kalan ${lira(x.kalan)}`}</Text></View>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : null}
+          </>
+        ) : null}
+
+        {sekme === "cizelge" ? (
+          <View style={st.kart}>
+            {v.olaylar.length === 0 ? <Text style={st.kucuk}>Kayıt yok.</Text> : v.olaylar.map((o, i, l) => {
+              const [, r] = ICRA_OLAY[o.tur] ?? [H.gri, H.s];
+              return (
+                <View key={o.id} style={st.ce}>
+                  <View style={{ alignItems: "center", width: 16 }}>
+                    <View style={[st.ceN, { backgroundColor: r, borderColor: r }]} />
+                    {i < l.length - 1 ? <View style={st.ceC} /> : null}
+                  </View>
+                  <View style={{ flex: 1, paddingBottom: 14 }}>
+                    <View style={{ flexDirection: "row", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <Etiket metin={o.turAdi} renkler={ICRA_OLAY[o.tur]} />
+                      {o.tutar != null ? <Text style={{ fontWeight: "800", fontSize: 12 }}>{lira(o.tutar)}</Text> : null}
+                    </View>
+                    <Text style={{ fontWeight: "700", fontSize: 13.5, marginTop: 4 }}>{o.baslik}</Text>
+                    <Text style={st.kucuk}>{tarih(o.tarih, true)}{o.ekleyenAd ? ` · ${o.ekleyenAd}` : ""}</Text>
+                    {o.aciklama ? <Text style={{ fontSize: 12.5, color: "#3a4152", marginTop: 4 }}>{o.aciklama}</Text> : null}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+
+        {sekme === "kesinti" ? (
+          <View style={st.kart}>
+            {v.kesintiler.length === 0 ? <Text style={st.kucuk}>Henüz kesinti kaydı yok; panelden "Hesapla ve kaydet" ile başlar.</Text> : v.kesintiler.map((k, i, l) => (
+              <View key={k.id} style={[st.yaziOzet, { alignItems: "center" }, i === l.length - 1 && { borderBottomWidth: 0 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "700", fontSize: 13.5 }}>{k.donemAdi}</Text>
+                  <Text style={st.kucuk}>{k.tur === "nafaka" ? "Nafaka" : `${k.sira ?? "—"}. sıra`} · net {lira(k.netMaas)}{k.dekontId ? " · dekont var" : ""}</Text>
+                </View>
+                <View style={{ alignItems: "flex-end", gap: 4 }}>
+                  <Text style={{ fontWeight: "800" }}>{lira(k.tutar)}</Text>
+                  {k.odendi ? <Etiket metin={`Ödendi ${tarih(k.odemeTarihi)}`} renkler={[H.yesA, H.yes]} />
+                    : tam ? <Text onPress={() => odendi(k)} style={st.bas2A}>Ödendi işaretle</Text> : <Etiket metin="Bekliyor" renkler={[H.turA, H.tur]} />}
+                  {k.dekontId ? <Text onPress={() => Linking.openURL(icraBelgeAdresi(k.dekontId)).catch(() => {})} style={st.bas2A}>Dekontu aç</Text> : null}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {sekme === "belge" ? (
+          <>
+            {tam ? (
+              <TouchableOpacity style={[st.dug, st.dugM]} onPress={belgeEkle} disabled={yukleniyor}>
+                {yukleniyor ? <ActivityIndicator color="#fff" /> : <Text style={st.dugMT}>+ Belge yükle (tebligat, dekont)</Text>}
+              </TouchableOpacity>
+            ) : null}
+            {v.belgeler.length === 0 ? <Bos baslik="Belge yok" /> : (
+              <View style={st.belgeler}>
+                {v.belgeler.map((b) => {
+                  const [z, r] = uzantiRenk(b.uzanti);
+                  return (
+                    <Pressable key={b.id} onPress={() => Linking.openURL(icraBelgeAdresi(b.id)).catch(() => Alert.alert("Açılamadı", "Belge açılamadı."))} style={st.bel}>
+                      <View style={[st.belOn, { backgroundColor: z }]}><Text style={{ color: r, fontSize: 11, fontWeight: "800" }}>{b.uzanti || "DOSYA"}</Text></View>
+                      <Text style={st.belAd} numberOfLines={1}>{b.ad}</Text>
+                      <Text style={[st.kucuk, { paddingHorizontal: 7, paddingBottom: 6, fontSize: 10.5 }]} numberOfLines={1}>{tarih(b.tarih)}{b.kesintiId ? " · dekont" : ""}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        ) : null}
+      </ScrollView>
+
+      <Modal visible={!!yazi} animationType="slide" onRequestClose={() => setYazi(null)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: H.k }} edges={["top", "bottom"]}>
+          <Bar baslik={yazi?.baslik ?? ""} geri={() => setYazi(null)} sag={
+            <TouchableOpacity onPress={() => Share.share({ message: yazi?.metin ?? "" }).catch(() => {})} style={st.barIk}><Text style={{ fontSize: 11.5, fontWeight: "700", color: H.m }}>Paylaş</Text></TouchableOpacity>
+          } />
+          <ScrollView contentContainerStyle={{ padding: 14 }}>
+            <View style={st.mektup}>
+              <View style={st.mektupUst} />
+              <Text selectable style={st.mektupP}>{yazi?.metin}</Text>
+            </View>
+            <Text style={[st.kucuk, { marginTop: 10 }]}>Taslaktır; hukuk danışmanına kontrol ettirilmelidir. Yazdırma ve kopyalama panelde.</Text>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+    </View>
+  );
+}
+
 /* =============================================================== Diğer */
 
 function Diger({ ben, cikis, personeleGec }) {
@@ -832,6 +1172,10 @@ function Diger({ ben, cikis, personeleGec }) {
 const MENU = [
   ["masa", "Masa", "ev"], ["dosyalar", "Dosyalar", "belge"], ["ajanda", "Ajanda", "takvim"], ["yazilar", "Yazışma", "mesaj"], ["diger", "Diğer", "diger"],
 ];
+/* İcra sekmesi (30.10.2026): yalnız icra yetkisi olan iç ekipte; danışmanda hiç yok */
+const MENU_ICRA = [
+  ["masa", "Masa", "ev"], ["dosyalar", "Dosyalar", "belge"], ["icra", "İcra", "para"], ["ajanda", "Ajanda", "takvim"], ["yazilar", "Yazışma", "mesaj"], ["diger", "Diğer", "diger"],
+];
 
 export default function HukukUygulama({ navigation, route }) {
   const alt = useSafeAreaInsets();
@@ -842,6 +1186,7 @@ export default function HukukUygulama({ navigation, route }) {
   const [yigin, setYigin] = useState([]); // { tip: dosya|yazi|yaz, ... }
   const [okunmamis, setOkunmamis] = useState(0);
   const [surum, setSurum] = useState(0);
+  const [icra, setIcra] = useState(null);
   const danismanRef = useRef(false);
 
   useEffect(() => {
@@ -849,6 +1194,8 @@ export default function HukukUygulama({ navigation, route }) {
       if (!b?.yetkili) { setHata("Hukuk masasına erişiminiz yok."); return; }
       setBen(b);
       danismanRef.current = !!b.danisman;
+      /* İcra yetkisi: danışmana hiç sorulmaz */
+      if (!b.danisman) icraBen().then((i) => setIcra(i?.yetkili ? i : null)).catch(() => setIcra(null));
       /* Danışman personel ekranına hiç girmediği için bildirim kurulumu burada */
       if (b.danisman) bildirimHazirla().catch?.(() => {});
     }).catch((e) => setHata(e.message));
@@ -886,6 +1233,7 @@ export default function HukukUygulama({ navigation, route }) {
   }, [yigin, sekme]);
 
   const ac = (id) => setYigin((y) => [...y, { tip: "dosya", id }]);
+  const icraAc = (id) => setYigin((y) => [...y, { tip: "icra", id }]);
   const yaziAc = (id) => setYigin((y) => [...y, { tip: "yazi", id }]);
   const yaz = (taslak) => setYigin((y) => [...y, { tip: "yaz", taslak }]);
   const geri = () => { setYigin((y) => y.slice(0, -1)); setSurum((s) => s + 1); };
@@ -918,7 +1266,8 @@ export default function HukukUygulama({ navigation, route }) {
   /* Alt menü sabit: içerik ScrollView'da kayar, menü yerinde durur.
      Klavye açıkken ya da yazı yazarken gizlenir; düğme ve metnin üstüne binmesin. */
   const menuGorunur = !yaziyor && !klavye.acik;
-  const ustKoyu = !ust && sekme === "masa" || ust?.tip === "dosya";
+  const ustKoyu = !ust && sekme === "masa" || ust?.tip === "dosya" || ust?.tip === "icra";
+  const menu = icra ? MENU_ICRA : MENU;
 
   return (
     <View style={{ flex: 1, backgroundColor: ustKoyu ? H.m : H.k }}>
@@ -926,24 +1275,26 @@ export default function HukukUygulama({ navigation, route }) {
       <View style={{ height: alt.top, backgroundColor: ustKoyu ? H.m : H.k }} />
       <View style={{ flex: 1, backgroundColor: H.k }}>
         {ust?.tip === "dosya" ? <DosyaSayfasi key={`d${ust.id}`} id={ust.id} ben={ben} geri={geri} yaziAc={yaziAc} yaz={yaz} />
+          : ust?.tip === "icra" && icra ? <IcraDosyaSayfasi key={`i${ust.id}`} id={ust.id} icra={icra} geri={geri} />
           : ust?.tip === "yazi" ? <YaziOku key={`y${ust.id}`} id={ust.id} ben={ben} geri={geri} ac={(i) => setYigin((y) => [...y.slice(0, -1), { tip: "yazi", id: i }])}
               dosyaAc={ac} yanitla={(y) => yaz({ yanit: y })} />
           : ust?.tip === "yaz" ? <YaziYaz ben={ben} taslak={ust.taslak} geri={geri}
               gonderildi={(id) => setYigin((y) => [...y.slice(0, -1).filter((x) => x.tip !== "yazi"), ...(id ? [{ tip: "yazi", id }] : [])])} />
-          : sekme === "masa" ? <Masa key={surum} ben={ben} ac={ac} yaziAc={yaziAc} git={git} />
+          : sekme === "masa" ? <Masa key={surum} ben={ben} ac={ac} yaziAc={yaziAc} git={git} icraVar={!!icra} icraAc={icraAc} />
           : sekme === "dosyalar" ? <Dosyalar key={surum} ben={ben} ac={ac} />
+          : sekme === "icra" && icra ? <IcraListesi key={surum} icra={icra} ac={icraAc} />
           : sekme === "ajanda" ? <Ajanda ac={ac} yaziAc={yaziAc} />
           : sekme === "yazilar" ? <Yazilar key={surum} ben={ben} yaziAc={yaziAc} yaz={yaz} />
           : <Diger ben={ben} cikis={cikis} personeleGec={personeleGec} />}
       </View>
       {menuGorunur ? (
         <View style={[st.menu, { paddingBottom: Math.max(alt.bottom, 8) }]}>
-          {MENU.map(([k, a, i]) => {
-            const on = !ust && sekme === k || (ust?.tip === "dosya" && k === "dosyalar" && !yigin.some((x) => x.tip !== "dosya")) || (ust?.tip === "yazi" && k === "yazilar");
+          {menu.map(([k, a, i]) => {
+            const on = !ust && sekme === k || (ust?.tip === "dosya" && k === "dosyalar" && !yigin.some((x) => x.tip !== "dosya")) || (ust?.tip === "yazi" && k === "yazilar") || (ust?.tip === "icra" && k === "icra");
             return (
               <TouchableOpacity key={k} style={st.menuB} onPress={() => git(k)} accessibilityLabel={a}>
                 {on ? <View style={st.menuCizgi} /> : null}
-                <Simge ad={i} renkli={on ? H.m : H.s2} boyut={21} dolgu={on && i !== "belge" && i !== "takvim"} />
+                <Simge ad={i} renkli={on ? H.m : H.s2} boyut={21} dolgu={on && i !== "belge" && i !== "takvim" && i !== "para"} />
                 <Text style={[st.menuT, on && { color: H.m }]}>{a}</Text>
                 {k === "yazilar" && okunmamis > 0 ? <Text style={st.menuRozet}>{okunmamis}</Text> : null}
               </TouchableOpacity>
@@ -973,6 +1324,16 @@ const st = StyleSheet.create({
   halka: { position: "absolute", right: -60, top: -40, width: 220, height: 220, borderRadius: 110, borderWidth: 30, borderColor: "#ffffff08" },
   gunluk: { marginTop: 18, fontFamily: SERIF, fontSize: 21, lineHeight: 27, color: "#fff" },
   k3: { flexDirection: "row", gap: 8, marginTop: 16 },
+  k4: { flexDirection: "row", gap: 8 },
+  k4k: { flex: 1, backgroundColor: H.kart, borderWidth: 1, borderColor: H.cizgi, borderRadius: 14, padding: 10 },
+  k4b: { color: H.m, fontSize: 20, fontWeight: "800", fontFamily: SERIF },
+  k4s: { color: H.s, fontSize: 10.5, fontWeight: "700" },
+  sira: { minWidth: 30, height: 30, paddingHorizontal: 8, borderRadius: 9, backgroundColor: H.mA, alignItems: "center", justifyContent: "center" },
+  siraT: { fontFamily: SERIF, fontSize: 16, fontWeight: "600", color: H.m },
+  ilerleme: { height: 6, borderRadius: 3, backgroundColor: "#ffffff1c", overflow: "hidden", marginTop: 12 },
+  ilerlemeDolu: { height: "100%", backgroundColor: H.a, borderRadius: 3 },
+  s3s2: { fontSize: 10.5, color: H.s, fontWeight: "700", textTransform: "uppercase" },
+  deger: { fontSize: 15, fontWeight: "800", color: H.t, marginTop: 2 },
   k3k: { flex: 1, backgroundColor: "#ffffff10", borderWidth: 1, borderColor: "#ffffff1c", borderRadius: 14, padding: 10 },
   k3b: { color: "#fff", fontSize: 21, fontWeight: "800" },
   k3s: { color: "#c4cbdb", fontSize: 11 },

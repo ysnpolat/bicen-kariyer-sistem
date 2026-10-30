@@ -96,6 +96,9 @@ kurucu.Services.AddSingleton<PerformansOlcutServisi>();
 kurucu.Services.AddScoped<KartGecisAktarimServisi>();
 kurucu.Services.AddHostedService<KartGecisGorevi>();
 kurucu.Services.AddHostedService<HukukHatirlatmaGorevi>();
+/* İcra / maaş haczi (30.10.2026): hesap servisi ve cevap süresi / ayrılış görevi */
+kurucu.Services.AddScoped<IcraServisi>();
+kurucu.Services.AddHostedService<IcraGorevi>();
 kurucu.Services.AddHostedService<MaasOnbellegiGorevi>();
 kurucu.Services.AddHostedService<PerformansBildirimGorevi>();
 kurucu.Services.AddScoped<OrgOnayServisi>();
@@ -549,7 +552,12 @@ uygulama.Use(async (baglam, sonraki) =>
         && !baglam.Request.Path.StartsWithSegments("/api/Logo", StringComparison.OrdinalIgnoreCase)
         /* Yardım videosu (26.10.2026): yalnız Hukuk masası videosu */
         && !baglam.Request.Path.Equals("/api/YardimVideo/Mobil", StringComparison.OrdinalIgnoreCase)
-        && !baglam.Request.Path.Equals("/api/YardimVideo/Izle/Hukuk", StringComparison.OrdinalIgnoreCase))
+        && !baglam.Request.Path.Equals("/api/YardimVideo/Izle/Hukuk", StringComparison.OrdinalIgnoreCase)
+        /* İcra / maaş haczi (30.10.2026): danışman /api/Hukuk altında olsa da
+           icra uçlarına giremez; personelin borç ve maaş bilgisi dışarı çıkmaz */
+        || (baglam.User?.Identity?.IsAuthenticated == true
+            && baglam.User.IsInRole(BicenKariyer.API.Controllers.HukukController.DanismanRolu)
+            && baglam.Request.Path.StartsWithSegments("/api/Hukuk/Icra", StringComparison.OrdinalIgnoreCase)))
     {
         baglam.Response.StatusCode = 403;
         await baglam.Response.WriteAsJsonAsync(new { hata = "Bu alana erişiminiz yok." });

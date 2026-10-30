@@ -47,12 +47,12 @@ const KISAYOL_DISI = new Set(["vardiya", "duyuru", "performans"]);
 /* Varsayılan sıra (kişi düzenleyene kadar): yönetici işleri önce */
 const KISAYOL_SIRASI = [
   "izinonay", "ekipdegerlendirme", "ekibim", "puantaj", "vardiyaplani", "isemri", "checklist", "ariza",
-  "izin", "avans", "kazankazan", "fiyatkontrol", "rakipfiyat", "envanter", "kunye", "haberler", "prim",
+  "izin", "avans", "icralarim", "kazankazan", "fiyatkontrol", "rakipfiyat", "envanter", "kunye", "haberler", "prim",
   "rapor", "etik",
 ];
 
 /* "YENİ" rozeti */
-const YENI_MODULLER = new Set(["kazankazan", "ekipdegerlendirme"]);
+const YENI_MODULLER = new Set(["kazankazan", "ekipdegerlendirme", "icralarim"]);
 
 /** Kutlamanın aynı gün tekrar çıkmaması için; uygulama kapanınca sıfırlanır. */
 let kutlamaGunu = null;

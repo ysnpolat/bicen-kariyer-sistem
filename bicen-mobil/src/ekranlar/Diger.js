@@ -62,6 +62,8 @@ export const EKRANLAR = {
   mesajlar: "Mesajlar",
   devamsizlik: "Devamsizlik",
   skt: "Skt",
+  /* 1.11 */
+  icralarim: "Icralarim",
 };
 
 export default function Diger({ navigation }) {
@@ -226,7 +228,7 @@ export default function Diger({ navigation }) {
     /* Yönetici İşlemleri (1.7) ekibin işleriyle bir arada */
     { ad: "Ekip ve onaylar", kodlar: ["izinonay", "ekibim", "ekipdegerlendirme", "devamsizlik", "puantaj", "vardiyaplani"] },
     { ad: "Mağaza", kodlar: ["skt", "ariza", "envanter", "fiyatkontrol", "rakipfiyat", "kunye"] },
-    { ad: "Özlük", kodlar: ["izin", "avans", "prim", "performans", "bilgilerim", "bilgi"] },
+    { ad: "Özlük", kodlar: ["izin", "avans", "icralarim", "prim", "performans", "bilgilerim", "bilgi"] },
     { ad: "İletişim ve raporlar", kodlar: ["mesajlar", "duyuru", "haberler", "rapor", "etik"] },
   ];
 

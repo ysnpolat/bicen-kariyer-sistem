@@ -7,8 +7,23 @@ import { api, cokParcali, jetonOku, oturumluAdres } from "./api";
 
 export const hukukBen = () => api.al("/api/Hukuk/Ben");
 export const hukukMasa = () => api.al("/api/Hukuk/Masa");
-export const hukukDosyalar = (durum = "acik", q = "") =>
-  api.al(`/api/Hukuk/Dosyalar?durum=${durum}${q ? `&q=${encodeURIComponent(q)}` : ""}`);
+export const hukukDosyalar = (durum = "acik", q = "", tur = "") =>
+  api.al(`/api/Hukuk/Dosyalar?durum=${durum}${q ? `&q=${encodeURIComponent(q)}` : ""}${tur ? `&tur=${encodeURIComponent(tur)}` : ""}`);
+
+/* İcra / maaş haczi (30.10.2026) — /api/Hukuk/Icra; danışmana sunucu kapalı,
+   istemci de danışmanda hiç çağırmaz. */
+export const icraBen = () => api.al("/api/Hukuk/Icra/Ben");
+export const icraOzet = () => api.al("/api/Hukuk/Icra/Ozet");
+export const icraDosyalar = (durum = "acik", q = "", tur = "") =>
+  api.al(`/api/Hukuk/Icra/Dosyalar?durum=${durum}${q ? `&q=${encodeURIComponent(q)}` : ""}${tur ? `&tur=${tur}` : ""}`);
+export const icraDosya = (id) => api.al(`/api/Hukuk/Icra/Dosya/${id}`);
+export const icraCevapYazisi = (id) => api.al(`/api/Hukuk/Icra/Dosya/${id}/Cevap`);
+export const icraAyrilisYazisi = (id) => api.al(`/api/Hukuk/Icra/Dosya/${id}/AyrilisYazisi`);
+export const icraOlayEkle = (id, g) => api.gonder(`/api/Hukuk/Icra/Dosya/${id}/Olay`, g);
+export const icraOdendi = (kid, odendi = true) => api.gonder(`/api/Hukuk/Icra/Kesinti/${kid}/Odendi`, { odendi });
+export const icraBelgeAdresi = (id) => oturumluAdres(`/api/Hukuk/Icra/Belge/${id}`);
+export const icraBelgeYukle = (dosyaId, dosya) => cokParcali(`/api/Hukuk/Icra/Dosya/${dosyaId}/Belge`, {}, dosya);
+export const lira = (v) => (v == null ? "—" : `${Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`);
 export const hukukDosya = (id) => api.al(`/api/Hukuk/Dosya/${id}`);
 export const hukukAjanda = (gun = 45) => {
   const b = new Date();

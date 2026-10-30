@@ -48,6 +48,10 @@ export const SAYFA_GRUPLARI: SayfaGrubu[] = [
       { key: "sirkulasyon", ad: "Sirkülasyon" },
       { key: "egitim", ad: "Eğitim Dokümanları" },
       { key: "pusula", ad: "Ücret Pusulaları" },
+      /* İcra / maaş haczi (30.10.2026): Hukuk masası › İcra sekmesi. Hukuk
+         ekibi ve yöneticiler her zaman görür; İK uzmanı rolüne buradan
+         AÇIKÇA verilmedikçe göremez (boş liste = hepsi kuralı geçmez). */
+      { key: "icra", ad: "İcra / maaş haczi takibi", aciklama: "Hukuk masası › İcra sekmesi; personelin borç ve maaş bilgisini içerir, yalnız gerekli İK uzmanına açın" },
     ],
   },
   {

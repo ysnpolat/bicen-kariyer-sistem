@@ -17,7 +17,8 @@ namespace BicenKariyer.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class MobilController : ControllerBase
+/* 30.10.2026: partial — icra uçları MobilIcra.cs dosyasında */
+public partial class MobilController : ControllerBase
 {
     private readonly VeritabaniServisi _vt;
     private readonly PersonelKaynagiServisi _personelKaynak;
@@ -4747,6 +4748,12 @@ WHERE id = @doldurmaId", new { doldurmaId, checklistId });
         ("mesajlar", "Mesajlar", "Birebir ve grup mesajlaşma", "mesaj"),
         ("devamsizlik", "Devamsızlık Girişi", "Vardiya girişi yapmayan ekibine devamsızlık gir", "uyari"),
 
+        /* İcralarım (30.10.2026): personelin kendi maaş haczi / nafaka
+           dosyaları. Ekranı 1.11'de. Tanımsızken yalnız icra dosyası olan
+           personelde görünür (IcraVar); portaldan gruba/kişiye açılıp
+           kapatılabilir. */
+        ("icralarim", "İcralarım", "Maaş haczi ve nafaka dosyalarınız, sıra ve kesintiler", "belge"),
+
         /* Yeni modül eklerken: buraya bir satır yazmak yeterli. Uygulamada
            karşılığı olan bir ekran yoksa menüde "yakında" uyarısı çıkar,
            o yüzden ekran hazır olmadan eklenmemeli. */
@@ -4867,6 +4874,9 @@ WHERE LTRIM(RTRIM(talep_eden)) = @sicil AND olusturma >= DATEADD(DAY, -120, SYSD
                 ? (_portalYetki.Acik(sicil, gorev, "puantaj") ?? puantajVarsayilan)
                 : m.Kod == "izinonay"
                 ? onaylayabilir
+                /* İcra (30.10.2026): dosyası olana kendiliğinden; portal ayarı üstün */
+                : m.Kod == "icralarim"
+                ? (_portalYetki.Acik(sicil, gorev, "icralarim") ?? IcraVar(sicil))
                 /* İK panel hesabı olan kişi mesajlarını telefonda da görür */
                 : m.Kod == "mesajlar"
                 ? _portalYetki.AcikMi(sicil, gorev, "mesajlar")
@@ -4880,6 +4890,7 @@ WHERE LTRIM(RTRIM(talep_eden)) = @sicil AND olusturma >= DATEADD(DAY, -120, SYSD
             .Where(m => m.Kod != "kazankazan" || SurumEnAz(1, 8))
             .Where(m => m.Kod != "ekipdegerlendirme" || SurumEnAz(1, 8))
             .Where(m => (m.Kod != "mesajlar" && m.Kod != "devamsizlik") || SurumEnAz(1, 9))
+            .Where(m => m.Kod != "icralarim" || SurumEnAz(1, 11))
             .Select(m => new { kod = m.Kod, ad = m.Ad, aciklama = m.Aciklama, simge = m.Simge })
             .ToList();
 

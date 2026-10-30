@@ -302,3 +302,39 @@
   .hk-yaz-ic .iki { grid-template-columns: 1fr; }
   .hk-ana { padding: 16px 16px 28px; }
 }
+
+/* İcra / maaş haczi (30.10.2026) */
+.hk-sira { display: inline-flex; align-items: center; gap: 4px; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 9px; background: var(--mA); color: var(--m); font-family: var(--serif); font-size: 16px; font-weight: 600; justify-content: center; }
+.hk-sira.on { background: var(--m); color: #fff; }
+.hk-sira small { font-family: inherit; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; opacity: .8; }
+.hk-link { color: var(--a2); font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.hk-link:hover { text-decoration: underline; }
+.hk-uyari { display: flex; gap: 10px; align-items: center; background: var(--turA); color: var(--tur); border: 1px solid #ecd5b4; border-radius: 12px; padding: 9px 12px; font-size: 12.5px; }
+.hk-uyari.kir { background: var(--kirA); color: var(--kir); border-color: #f0cfc4; }
+.hk-uyari .hk-link { margin-left: auto; white-space: nowrap; }
+.hk-dust.icra::after { content: "₺"; }
+.hk-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: #ffffff1c; overflow: hidden; position: relative; z-index: 1; }
+.hk-bar i { display: block; height: 100%; background: var(--a); border-radius: 3px; }
+.hk-hesap { display: grid; gap: 12px; }
+.hk-hesap .ust { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.hk-hesap .ust > div { background: #fff; border: 1px solid var(--cizgi); border-radius: 12px; padding: 9px 11px; min-width: 0; }
+.hk-hesap .ust small { color: var(--s); font-size: 11px; font-weight: 700; display: block; }
+.hk-hesap .ust b { display: block; font-family: var(--serif); font-size: 17px; color: var(--m); margin-top: 2px; overflow-wrap: anywhere; }
+.hk-hesap .ust span { font-size: 11px; color: var(--s); }
+.hk-hesap .ust > div.vurgu { background: var(--m); border-color: var(--m); }
+.hk-hesap .ust > div.vurgu small, .hk-hesap .ust > div.vurgu span { color: #c4cbdb; }
+.hk-hesap .ust > div.vurgu b { color: #fff; }
+.hk-mini { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.hk-mini th { font-size: 11px; color: var(--s); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--cizgi); text-transform: uppercase; letter-spacing: .3px; }
+.hk-mini td { padding: 8px; border-bottom: 1px solid var(--cizgi2); vertical-align: middle; }
+.hk-mini tr:last-child td { border-bottom: 0; }
+.hk-mini td small { color: var(--s); font-size: 11px; }
+.hk-metin textarea, textarea.hk-metin { font-family: var(--serif); font-size: 14px; line-height: 1.7; background: #fff; }
+.hk-kpi.kucuk { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.hk-kpi.kucuk > div { padding: 10px 12px; border-radius: 12px; }
+.hk-kpi.kucuk b { font-size: 22px; }
+.hk-tablo td .hk-sira { vertical-align: middle; }
+@media (max-width: 960px) {
+  .hk-hesap .ust { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hk-kpi.kucuk { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

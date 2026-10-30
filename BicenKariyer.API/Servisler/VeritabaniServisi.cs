@@ -5318,6 +5318,145 @@ END");
         {
             // Kurulamazsa Turnover yalnızca Mikro'dan hesaplanır
         }
+
+        /* İcra / maaş haczi takibi (30.10.2026): personele gelen haciz
+           ihbarnameleri ve nafaka kesintileri. Dosyalar tebliğ sırasına göre
+           sıralanır; her ay nafakanın tamamı + net maaşın ayarlanan oranı
+           (varsayılan ¼) sıradaki dosyaya kesilir. Olaylar (tebligat, cevap,
+           ödeme, sıra, kapanış…) zaman çizelgesi; belgeler tebligat taraması
+           ve ödeme dekontu. Danışman bu tablolara hiçbir uçtan ulaşamaz. */
+        try
+        {
+            db.Execute(@"
+IF OBJECT_ID('KRY_ICRA_DOSYA') IS NULL
+BEGIN
+    CREATE TABLE KRY_ICRA_DOSYA (
+        id                INT IDENTITY(1,1) PRIMARY KEY,
+        dosya_no          NVARCHAR(20)   NOT NULL,
+        sicil             NVARCHAR(30)   NOT NULL,
+        personel_ad       NVARCHAR(150)  NULL,
+        tur               NVARCHAR(10)   NOT NULL DEFAULT N'icra',
+        icra_dairesi      NVARCHAR(200)  NULL,
+        esas_no           NVARCHAR(60)   NULL,
+        alacakli          NVARCHAR(200)  NULL,
+        alacakli_vekili   NVARCHAR(200)  NULL,
+        teblig_tarihi     DATE           NULL,
+        gelis_tarihi      DATE           NULL,
+        cevap_suresi      DATE           NULL,
+        cevap_tarihi      DATE           NULL,
+        asil_alacak       DECIMAL(18,2)  NULL,
+        faiz              DECIMAL(18,2)  NULL,
+        masraf            DECIMAL(18,2)  NULL,
+        toplam_borc       DECIMAL(18,2)  NOT NULL DEFAULT 0,
+        aylik_tutar       DECIMAL(18,2)  NULL,
+        baslangic         DATE           NULL,
+        odeme_hesabi      NVARCHAR(300)  NULL,
+        sira              INT            NULL,
+        sira_notu         NVARCHAR(300)  NULL,
+        durum             NVARCHAR(12)   NOT NULL DEFAULT N'acik',
+        kapanis_tarihi    DATE           NULL,
+        notlar            NVARCHAR(2000) NULL,
+        ayrilis_bildirildi DATETIME2     NULL,
+        olusturan         NVARCHAR(80)   NULL,
+        olusturma         DATETIME2      NOT NULL DEFAULT SYSDATETIME(),
+        guncelleme        DATETIME2      NULL
+    );
+    CREATE UNIQUE INDEX UX_KRY_ICRA_DOSYA_no ON KRY_ICRA_DOSYA(dosya_no);
+    CREATE INDEX IX_KRY_ICRA_DOSYA_sicil ON KRY_ICRA_DOSYA(sicil, durum);
+    CREATE INDEX IX_KRY_ICRA_DOSYA_durum ON KRY_ICRA_DOSYA(durum, id DESC);
+END
+
+IF OBJECT_ID('KRY_ICRA_OLAY') IS NULL
+BEGIN
+    CREATE TABLE KRY_ICRA_OLAY (
+        id          INT IDENTITY(1,1) PRIMARY KEY,
+        dosya_id    INT            NOT NULL,
+        tur         NVARCHAR(20)   NOT NULL,
+        tarih       DATETIME2      NOT NULL,
+        baslik      NVARCHAR(200)  NOT NULL,
+        aciklama    NVARCHAR(1000) NULL,
+        tutar       DECIMAL(18,2)  NULL,
+        ekleyen     NVARCHAR(80)   NULL,
+        ekleyen_ad  NVARCHAR(150)  NULL,
+        olusturma   DATETIME2      NOT NULL DEFAULT SYSDATETIME()
+    );
+    CREATE INDEX IX_KRY_ICRA_OLAY_dosya ON KRY_ICRA_OLAY(dosya_id, tarih);
+END
+
+IF OBJECT_ID('KRY_ICRA_BELGE') IS NULL
+BEGIN
+    CREATE TABLE KRY_ICRA_BELGE (
+        id          INT IDENTITY(1,1) PRIMARY KEY,
+        dosya_id    INT            NOT NULL,
+        kesinti_id  INT            NULL,
+        ad          NVARCHAR(250)  NOT NULL,
+        yol         NVARCHAR(400)  NOT NULL,
+        icerik_turu NVARCHAR(120)  NULL,
+        boyut       BIGINT         NOT NULL DEFAULT 0,
+        yukleyen    NVARCHAR(80)   NULL,
+        yukleyen_ad NVARCHAR(150)  NULL,
+        silindi     BIT            NOT NULL DEFAULT 0,
+        olusturma   DATETIME2      NOT NULL DEFAULT SYSDATETIME()
+    );
+    CREATE INDEX IX_KRY_ICRA_BELGE_dosya ON KRY_ICRA_BELGE(dosya_id, silindi);
+END
+
+IF OBJECT_ID('KRY_ICRA_KESINTI') IS NULL
+BEGIN
+    CREATE TABLE KRY_ICRA_KESINTI (
+        id            INT IDENTITY(1,1) PRIMARY KEY,
+        dosya_id      INT            NOT NULL,
+        sicil         NVARCHAR(30)   NOT NULL,
+        donem         NVARCHAR(7)    NOT NULL,
+        tur           NVARCHAR(10)   NOT NULL,
+        tutar         DECIMAL(18,2)  NOT NULL,
+        net_maas      DECIMAL(18,2)  NULL,
+        maas_kaynak   NVARCHAR(10)   NULL,
+        sira          INT            NULL,
+        odendi        BIT            NOT NULL DEFAULT 0,
+        odeme_tarihi  DATE           NULL,
+        dekont_id     INT            NULL,
+        aciklama      NVARCHAR(300)  NULL,
+        olusturan     NVARCHAR(80)   NULL,
+        olusturma     DATETIME2      NOT NULL DEFAULT SYSDATETIME()
+    );
+    CREATE INDEX IX_KRY_ICRA_KESINTI_dosya ON KRY_ICRA_KESINTI(dosya_id, donem);
+    CREATE INDEX IX_KRY_ICRA_KESINTI_donem ON KRY_ICRA_KESINTI(donem, sicil);
+END
+
+IF OBJECT_ID('KRY_ICRA_MAAS') IS NULL
+    CREATE TABLE KRY_ICRA_MAAS (
+        sicil        NVARCHAR(30)  NOT NULL,
+        donem        NVARCHAR(7)   NOT NULL,
+        net_maas     DECIMAL(18,2) NOT NULL,
+        guncelleyen  NVARCHAR(80)  NULL,
+        guncelleme   DATETIME2     NOT NULL DEFAULT SYSDATETIME(),
+        CONSTRAINT PK_KRY_ICRA_MAAS PRIMARY KEY (sicil, donem)
+    );
+
+IF OBJECT_ID('KRY_ICRA_LOG') IS NULL
+BEGIN
+    CREATE TABLE KRY_ICRA_LOG (
+        id        INT IDENTITY(1,1) PRIMARY KEY,
+        anahtar   NVARCHAR(80)  NULL,
+        ad        NVARCHAR(150) NULL,
+        islem     NVARCHAR(40)  NOT NULL,
+        dosya_id  INT           NULL,
+        hedef     NVARCHAR(300) NULL,
+        ip        NVARCHAR(60)  NULL,
+        zaman     DATETIME2     NOT NULL DEFAULT SYSDATETIME()
+    );
+    CREATE INDEX IX_KRY_ICRA_LOG_dosya ON KRY_ICRA_LOG(dosya_id, id DESC);
+    CREATE TABLE KRY_ICRA_HATIRLATMA (
+        anahtar  NVARCHAR(60) NOT NULL PRIMARY KEY,
+        zaman    DATETIME2    NOT NULL DEFAULT SYSDATETIME()
+    );
+END");
+        }
+        catch (Exception)
+        {
+            // Kurulamazsa İcra takibi ekranı 'tablo yok' hatası verir
+        }
     }
 
     private void YoneticiOlustur(IDbConnection db)
