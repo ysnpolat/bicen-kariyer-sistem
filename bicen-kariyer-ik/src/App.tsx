@@ -103,6 +103,8 @@ import ErisimDenetimi from "./ErisimDenetimi";
 import YonetimRaporu from "./YonetimRaporu";
 import YillikIzin from "./YillikIzin";
 import IzinUcretleri from "./IzinUcretleri";
+/* Personel bütçesi (30.10.2026): ücret verisi; yalnız Admin, GMY, İK yöneticisi */
+import PersonelButcesi, { butceGorme } from "./PersonelButcesi";
 import VardiyaKarekod from "./VardiyaKarekod";
 import IzinTalepleri from "./IzinTalepleri";
 import MobilDuyurular from "./Duyurular";
@@ -161,7 +163,7 @@ const { Header, Content } = Layout;
  */
 /* Yıllık İzin Ücretleri (izinucreti) ücret verisi gösteriyor: yalnızca
    Yönetici; Rol Yetkileri'nde işaretlense de başka role açılmaz. */
-const YALNIZ_YONETICI = ["zeka", "erisim", "test", "izinucreti"];
+const YALNIZ_YONETICI = ["zeka", "erisim", "test", "izinucreti", "butce"];
 
 /* 16.10.2026: açık sayfa adres çubuğunda (#personeller) tutulur; sayfa
    yenilenince aynı ekranda açılır, tarayıcının geri/ileri tuşları çalışır. */
@@ -661,7 +663,7 @@ export default function App() {
     {
       ad: "Personel",
       anahtarlar: [
-        "personeller", "kadro", "sirkulasyon", "personelperformansGrup",
+        "personeller", "kadro", "sirkulasyon", "butce", "personelperformansGrup",
         "performans", "egitim", "pusula",
       ],
     },
@@ -709,6 +711,9 @@ export default function App() {
       : []),
     { key: "yillikizin", label: "İzin Yönetimi", icon: <CalendarDays size={16} strokeWidth={2} /> },
     { key: "sirkulasyon", label: "Sirkülasyon", icon: <TrendingDown size={16} strokeWidth={2} /> },
+    ...(butceGorme(oturum)
+      ? [{ key: "butce", label: "Personel Bütçesi", icon: <Wallet size={16} strokeWidth={2} /> }]
+      : []),
     { key: "kadro", label: "Norm Kadro", icon: <Target size={16} strokeWidth={2} /> },
     { key: "bicenkart", label: "Biçen Kart", icon: <CreditCard size={16} strokeWidth={2} /> },
     { key: "rapor", label: "Raporlar", icon: <BarChart3 size={16} strokeWidth={2} /> },
@@ -873,6 +878,19 @@ export default function App() {
             icon: <TrendingDown size={16} strokeWidth={2} />,
           },
         ]),
+
+    /* Personel bütçesi (30.10.2026): yıllık maliyet ve zam senaryoları.
+       Ücret verisi: yalnız Admin, GMY, İK yöneticisi; sunucu da aynı
+       kuralla 403 verir, Rol Yetkileri'nden başka role açılamaz. */
+    ...(butceGorme(oturum)
+      ? [
+          {
+            key: "butce",
+            label: "Personel Bütçesi",
+            icon: <Wallet size={16} strokeWidth={2} />,
+          },
+        ]
+      : []),
 
     /* Norm kadro: düzenleyebilenler ve görüntüleyebilenler */
     {
@@ -1073,6 +1091,8 @@ export default function App() {
         return <Rapor />;
       case "izinucreti":
         return adminMi(oturum) ? <IzinUcretleri /> : null;
+      case "butce":
+        return butceGorme(oturum) ? <PersonelButcesi /> : null;
       case "vardiyakarekod":
         return <VardiyaKarekod />;
       case "qr":
@@ -1149,6 +1169,10 @@ export default function App() {
       }).filter((m: any) => {
         if (!m?.key) return false;
         if (yalnizYonetici.has(m.key) && !kapidanGecen.has(m.key)) return false;
+
+        /* Personel bütçesi (30.10.2026): Rol Yetkileri'nde işaretlenemez;
+           koddaki kapıdan geçen (Admin, GMY, İK yöneticisi) her zaman görür */
+        if (m.key === "butce") return true;
 
         if (m.children) return true;
 

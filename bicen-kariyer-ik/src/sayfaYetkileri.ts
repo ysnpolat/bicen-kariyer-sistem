@@ -46,6 +46,9 @@ export const SAYFA_GRUPLARI: SayfaGrubu[] = [
       { key: "izintalep", ad: "Personel Talepleri" },
       { key: "cikismulakat", ad: "Çıkış Mülakatı" },
       { key: "sirkulasyon", ad: "Sirkülasyon" },
+      /* Personel bütçesi (30.10.2026): ücret verisi; yalnız Admin, GMY ve İK
+         yöneticisi, Rol Yetkileri'nden başka role açılamaz */
+      { key: "butce", ad: "Personel Bütçesi", yalnizYonetici: true, aciklama: "Yıllık personel maliyeti ve zam senaryoları; yalnız Yönetici, GMY ve İK Yöneticisi" },
       { key: "egitim", ad: "Eğitim Dokümanları" },
       { key: "pusula", ad: "Ücret Pusulaları" },
       /* İcra / maaş haczi (30.10.2026): Hukuk masası › İcra sekmesi. Hukuk

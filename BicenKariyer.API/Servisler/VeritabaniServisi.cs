@@ -5457,6 +5457,92 @@ END");
         {
             // Kurulamazsa İcra takibi ekranı 'tablo yok' hatası verir
         }
+
+        /* Personel bütçesi (30.10.2026): İK'nın B_T_E Excel'inin yerine.
+           Dönem = yıl/senaryo başlığı; parametre JSON (oranlar, dilimler,
+           yan giderler, tek seferlikler, gece çalışması); kişi listesi;
+           zam kuralları; her görüntüleme / dışa aktarma / değişiklik günlüğü.
+           Ücret verisi içerir: yalnız Admin, GMY ve İK yöneticisi. */
+        try
+        {
+            db.Execute(@"
+IF OBJECT_ID('KRY_BUTCE_DONEM') IS NULL
+BEGIN
+    CREATE TABLE KRY_BUTCE_DONEM (
+        id            INT IDENTITY(1,1) PRIMARY KEY,
+        ad            NVARCHAR(120)  NOT NULL,
+        yil           INT            NOT NULL,
+        baz_donem_id  INT            NULL,
+        durum         NVARCHAR(12)   NOT NULL DEFAULT N'taslak',
+        aciklama      NVARCHAR(1000) NULL,
+        kaynak        NVARCHAR(40)   NULL,
+        olusturan     NVARCHAR(150)  NULL,
+        olusturma     DATETIME2      NOT NULL DEFAULT SYSDATETIME(),
+        guncelleyen   NVARCHAR(150)  NULL,
+        guncelleme    DATETIME2      NULL,
+        silindi       BIT            NOT NULL DEFAULT 0
+    );
+    CREATE TABLE KRY_BUTCE_PARAMETRE (
+        donem_id      INT            NOT NULL PRIMARY KEY,
+        veri          NVARCHAR(MAX)  NOT NULL,
+        guncelleyen   NVARCHAR(150)  NULL,
+        guncelleme    DATETIME2      NOT NULL DEFAULT SYSDATETIME()
+    );
+    CREATE TABLE KRY_BUTCE_KISI (
+        id              INT IDENTITY(1,1) PRIMARY KEY,
+        donem_id        INT            NOT NULL,
+        sube            NVARCHAR(100)  NULL,
+        bolum           NVARCHAR(60)   NULL,
+        sicil           NVARCHAR(30)   NULL,
+        ad              NVARCHAR(150)  NULL,
+        gun             INT            NOT NULL DEFAULT 30,
+        emekli          BIT            NOT NULL DEFAULT 0,
+        meslek          NVARCHAR(100)  NULL,
+        grm_onceki      DECIMAL(18,2)  NOT NULL DEFAULT 0,
+        grm             DECIMAL(18,2)  NOT NULL DEFAULT 0,
+        bordro_net      DECIMAL(18,2)  NOT NULL DEFAULT 0,
+        yan_giderler    NVARCHAR(MAX)  NULL,
+        baz_grm         DECIMAL(18,2)  NULL,
+        baz_bordro_net  DECIMAL(18,2)  NULL,
+        baz_kisi_id     INT            NULL,
+        elle            BIT            NOT NULL DEFAULT 0,
+        aktif           BIT            NOT NULL DEFAULT 1,
+        notu            NVARCHAR(300)  NULL,
+        guncelleyen     NVARCHAR(150)  NULL,
+        guncelleme      DATETIME2      NULL
+    );
+    CREATE INDEX IX_KRY_BUTCE_KISI_donem ON KRY_BUTCE_KISI(donem_id, sube);
+    CREATE TABLE KRY_BUTCE_ZAM_KURAL (
+        id            INT IDENTITY(1,1) PRIMARY KEY,
+        donem_id      INT            NOT NULL,
+        tur           NVARCHAR(20)   NOT NULL,
+        sube          NVARCHAR(100)  NULL,
+        meslek        NVARCHAR(100)  NULL,
+        kisi_id       INT            NULL,
+        bordro_oran   DECIMAL(9,6)   NOT NULL DEFAULT 0,
+        grm_oran      DECIMAL(9,6)   NULL,
+        aciklama      NVARCHAR(300)  NULL,
+        sira          INT            NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IX_KRY_BUTCE_ZAM_KURAL_donem ON KRY_BUTCE_ZAM_KURAL(donem_id);
+    CREATE TABLE KRY_BUTCE_LOG (
+        id         INT IDENTITY(1,1) PRIMARY KEY,
+        kullanici  NVARCHAR(80)   NULL,
+        ad         NVARCHAR(150)  NULL,
+        rol        NVARCHAR(40)   NULL,
+        islem      NVARCHAR(40)   NOT NULL,
+        donem_id   INT            NULL,
+        ayrinti    NVARCHAR(400)  NULL,
+        ip         NVARCHAR(60)   NULL,
+        zaman      DATETIME2      NOT NULL DEFAULT SYSDATETIME()
+    );
+    CREATE INDEX IX_KRY_BUTCE_LOG_donem ON KRY_BUTCE_LOG(donem_id, id DESC);
+END");
+        }
+        catch (Exception)
+        {
+            // Kurulamazsa Personel Bütçesi ekranı 'tablo yok' hatası verir
+        }
     }
 
     private void YoneticiOlustur(IDbConnection db)
