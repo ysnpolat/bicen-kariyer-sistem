@@ -5262,6 +5262,62 @@ END");
         {
             // Kurulamazsa Yenilikler penceresi her girişte açılır, talep yazılamaz
         }
+
+        /* Turnover elle girilen değerler (30.10.2026): Sirkülasyon › Turnover
+           tablosunda bir ayın değeri elle girilirse otomatik hesabın yerine
+           geçer; NULL alan otomatik kalır. 2025 elle, sonraki yıllar otomatik
+           (gerekirse düzeltilir). */
+        try
+        {
+            db.Execute(@"
+IF OBJECT_ID('KRY_TURNOVER_MANUEL') IS NULL
+BEGIN
+    CREATE TABLE KRY_TURNOVER_MANUEL (
+        yil          INT           NOT NULL,
+        ay           INT           NOT NULL,
+        kapsam       NVARCHAR(10)  NOT NULL,
+        sube_sayisi  INT           NULL,
+        donem_basi   INT           NULL,
+        donem_sonu   INT           NULL,
+        giris        INT           NULL,
+        cikis        INT           NULL,
+        guncelleyen  NVARCHAR(100) NULL,
+        guncelleme   DATETIME2     NOT NULL DEFAULT SYSDATETIME(),
+        CONSTRAINT PK_KRY_TURNOVER_MANUEL PRIMARY KEY (yil, ay, kapsam)
+    );
+END");
+        }
+        catch (Exception)
+        {
+            // Kurulamazsa Turnover yalnızca otomatik değerlerle çalışır
+        }
+
+        /* Turnover elle girilen aylar (30.10.2026): İK'nın Excel'de tuttuğu
+           geçmiş yıl (2025) rakamları. Bir ay için satır varsa Turnover
+           ekranı o ayı Mikro'dan hesaplamaz, bu değerleri kullanır. */
+        try
+        {
+            db.Execute(@"
+IF OBJECT_ID('KRY_TURNOVER_MANUEL') IS NULL
+BEGIN
+    CREATE TABLE KRY_TURNOVER_MANUEL (
+        yil          INT           NOT NULL,
+        ay           INT           NOT NULL,
+        sube_sayisi  INT           NULL,
+        donem_basi   INT           NULL,
+        donem_sonu   INT           NULL,
+        giris        INT           NULL,
+        cikis        INT           NULL,
+        guncelleyen  NVARCHAR(100) NULL,
+        guncelleme   DATETIME2     NOT NULL DEFAULT SYSDATETIME(),
+        CONSTRAINT PK_KRY_TURNOVER_MANUEL PRIMARY KEY (yil, ay)
+    );
+END");
+        }
+        catch (Exception)
+        {
+            // Kurulamazsa Turnover yalnızca Mikro'dan hesaplanır
+        }
     }
 
     private void YoneticiOlustur(IDbConnection db)

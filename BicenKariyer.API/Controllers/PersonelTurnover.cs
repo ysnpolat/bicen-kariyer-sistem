@@ -1,4 +1,5 @@
 using BicenKariyer.API.Servisler;
+using Dapper;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BicenKariyer.API.Controllers;
@@ -9,26 +10,84 @@ namespace BicenKariyer.API.Controllers;
 /// <para>
 /// İK'nın elle tuttuğu "TURNOVER RAPORU" Excel'inin panel karşılığı: seçilen
 /// yıl ve bir önceki yıl için aylık şube sayısı, dönem başı / dönem sonu
-/// çalışan, giriş, çıkış, ortalama ve oranlar. Kaynak Sirkülasyon
-/// sekmesiyle aynı: Mikro personel kayıtları (giriş / çıkış tarihi), bölge
-/// seçimi uygulanır.
+/// çalışan, giriş, çıkış, ortalama ve oranlar.
 /// </para>
 ///
+/// <para>
+/// <b>Otomatik değerler</b> Mikro personel kayıtlarından (Sirkülasyon
+/// sekmesiyle aynı kaynak, bölge seçimi uygulanır):
+/// </para>
 /// <list type="bullet">
-/// <item><b>Dönem başı</b>: ayın 1'inde çalışan (girişi o günden önce ya da o
-/// gün, çıkışı yok ya da o günden sonra).</item>
-/// <item><b>Dönem sonu</b>: sonraki ayın 1'indeki sayı; böylece bir ayın sonu
-/// ile sonraki ayın başı her zaman aynı.</item>
-/// <item><b>Ortalama</b> = (dönem başı + dönem sonu) / 2.</item>
-/// <item><b>Aylık oran</b> = çıkış / ortalama.</item>
-/// <item><b>Yıllık oran</b> = aylık oran × 12 (Excel'deki "Oran %" satırı;
-/// %100 = bir yılda kadronun tamamı kadar çıkış).</item>
-/// <item><b>Şube sayısı</b>: ay sonunda en az bir aktif personeli olan mağaza
-/// iş grubu (genel merkez ve depo hariç, izin formu kuralıyla).</item>
+/// <item>Dönem başı: ayın 1'inde çalışan.</item>
+/// <item>Dönem sonu: sonraki ayın 1'indeki sayı (süren ayda bugün).</item>
+/// <item>Şube sayısı: ay sonunda aktif personeli olan mağaza iş grubu.</item>
+/// </list>
+///
+/// <para>
+/// <b>Elle girilen değerler</b> (KRY_TURNOVER_MANUEL): ay ve alan bazında
+/// otomatik değerin yerine geçer; boş bırakılan alan otomatik kalır. 2025
+/// İK tarafından elle girilir; sonraki yıllar otomatik gelir, gerekirse
+/// düzeltilir. Ortalama ve oranlar her zaman ekrandaki (elle ya da
+/// otomatik) değerlerden hesaplanır:
+/// </para>
+/// <list type="bullet">
+/// <item>Ortalama = (dönem başı + dönem sonu) / 2</item>
+/// <item>Aylık oran = çıkış / ortalama</item>
+/// <item>Yıllık oran = aylık oran × 12 (Excel'deki "Oran %")</item>
 /// </list>
 /// </summary>
 public partial class PersonelController
 {
+    private static readonly string[] TurnoverAlanlari = { "subeSayisi", "donemBasi", "donemSonu", "giris", "cikis" };
+
+    private static readonly string[] SureDilimleri = { "1 aydan az", "1–3 ay", "3–12 ay", "1–3 yıl", "3 yıldan fazla" };
+
+    private bool TurnoverDuzenleyebilir =>
+        Roller.Temel(Rol) is Roller.Admin or Roller.GenelMudurYardimcisi or Roller.IKYoneticisi or Roller.IK;
+
+    private static string SureDilimi(PersonelKaydi k)
+    {
+        if (k.GirisTarihi is null || k.CikisTarihi is null) return "Belirtilmemiş";
+        var gun = (k.CikisTarihi.Value.Date - k.GirisTarihi.Value.Date).TotalDays;
+        return gun < 30 ? SureDilimleri[0]
+            : gun < 90 ? SureDilimleri[1]
+            : gun < 365 ? SureDilimleri[2]
+            : gun < 365 * 3 ? SureDilimleri[3]
+            : SureDilimleri[4];
+    }
+
+    private static bool TurnoverCalisiyor(PersonelKaydi k, DateTime t) =>
+        k.GirisTarihi!.Value.Date <= t && (k.CikisTarihi is null || k.CikisTarihi.Value.Date > t);
+
+    private static string Etiket(string x) => string.IsNullOrWhiteSpace(x) ? "Belirtilmemiş" : x.Trim();
+
+    /// <summary>Hesaba giren personel ve mağaza ayrımı (iki uç da aynı kümeyi kullanır).</summary>
+    private (List<PersonelKaydi> Kisiler, List<PersonelKaydi> Tumu, Func<PersonelKaydi, bool> MagazaMi) TurnoverKisileri(
+        bool yalnizMagaza, IzinFormuServisi izinFormu)
+    {
+        var tumu = BolgeyeGoreSuz(PersonelleriGetir());
+
+        var form = izinFormu?.FormAyari();
+        var onbellek = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        bool MagazaMi(PersonelKaydi p)
+        {
+            var anahtar = $"{p.IsGrubu}|{p.Sube}";
+            if (onbellek.TryGetValue(anahtar, out var v)) return v;
+            try { v = izinFormu is null || izinFormu.FormHedefi(p, form) == "sube"; }
+            catch { v = true; }
+            onbellek[anahtar] = v;
+            return v;
+        }
+
+        var kisiler = tumu.Where(p => p.GirisTarihi is not null).ToList();
+        if (yalnizMagaza) kisiler = kisiler.Where(MagazaMi).ToList();
+        return (kisiler, tumu, MagazaMi);
+    }
+
+    /* ==================================================================== */
+    /* Rapor                                                                */
+    /* ==================================================================== */
+
     [HttpGet("Turnover")]
     public IActionResult Turnover(
         [FromQuery] int? yil,
@@ -36,12 +95,13 @@ public partial class PersonelController
         [FromServices] IzinFormuServisi izinFormu = null)
     {
         var buYil = yil ?? DateTime.Today.Year;
-        var yalnizMagaza = string.Equals(kapsam, "magaza", StringComparison.OrdinalIgnoreCase);
+        var kapsamKodu = string.Equals(kapsam, "magaza", StringComparison.OrdinalIgnoreCase) ? "magaza" : "tumu";
 
-        List<PersonelKaydi> tumu;
+        List<PersonelKaydi> kisiler, tumu;
+        Func<PersonelKaydi, bool> magazaMi;
         try
         {
-            tumu = BolgeyeGoreSuz(PersonelleriGetir());
+            (kisiler, tumu, magazaMi) = TurnoverKisileri(kapsamKodu == "magaza", izinFormu);
         }
         catch (Exception hata)
         {
@@ -49,24 +109,22 @@ public partial class PersonelController
             return StatusCode(502, new { hata = "Personel veritabanına ulaşılamadı.", ayrinti = HataAyrintisi(hata) });
         }
 
-        /* Mağaza / merkez ayrımı iş grubu başına bir kez */
-        var form = izinFormu?.FormAyari();
-        var magazaOnbellek = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        bool MagazaMi(PersonelKaydi p)
+        /* Elle girilen değerler */
+        var elle = new Dictionary<(int, int), dynamic>();
+        try
         {
-            var anahtar = $"{p.IsGrubu}|{p.Sube}";
-            if (magazaOnbellek.TryGetValue(anahtar, out var v)) return v;
-            try { v = izinFormu is null || izinFormu.FormHedefi(p, form) == "sube"; }
-            catch { v = true; }
-            magazaOnbellek[anahtar] = v;
-            return v;
+            using var db = _vt.Baglanti();
+            foreach (var r in db.Query(@"
+SELECT yil, ay, sube_sayisi AS subeSayisi, donem_basi AS donemBasi, donem_sonu AS donemSonu,
+       giris, cikis, guncelleyen, guncelleme
+FROM KRY_TURNOVER_MANUEL WHERE kapsam = @k AND yil IN (@a, @b)",
+                         new { k = kapsamKodu, a = buYil, b = buYil - 1 }))
+                elle[((int)r.yil, (int)r.ay)] = r;
         }
-
-        var kisiler = tumu.Where(p => p.GirisTarihi is not null).ToList();
-        if (yalnizMagaza) kisiler = kisiler.Where(MagazaMi).ToList();
-
-        bool Calisiyor(PersonelKaydi k, DateTime t) =>
-            k.GirisTarihi!.Value.Date <= t && (k.CikisTarihi is null || k.CikisTarihi.Value.Date > t);
+        catch (Exception hata)
+        {
+            _kayit.LogWarning(hata, "Turnover elle girilen değerler okunamadı");
+        }
 
         var bugun = DateTime.Today;
 
@@ -79,57 +137,80 @@ public partial class PersonelController
             {
                 var bas = new DateTime(y, ay, 1);
                 var sonrakiBas = bas.AddMonths(1);
+                elle.TryGetValue((y, ay), out var m);
 
-                /* Henüz başlamamış ay boş döner */
-                if (bas > bugun)
+                /* Henüz başlamamış ay: elle değer yoksa boş */
+                if (bas > bugun && m is null)
                 {
                     aylar.Add(new { ay, bos = true });
                     continue;
                 }
 
-                var devam = sonrakiBas > bugun;
+                var devam = bas <= bugun && sonrakiBas > bugun;
+                var gelecek = bas > bugun;
+
+                /* Otomatik değerler */
                 var sonTarih = devam ? bugun : sonrakiBas;
+                var oto = new Dictionary<string, int>
+                {
+                    ["donemBasi"] = gelecek ? 0 : kisiler.Count(k => TurnoverCalisiyor(k, bas)),
+                    ["donemSonu"] = gelecek ? 0 : kisiler.Count(k => TurnoverCalisiyor(k, sonTarih)),
+                    ["giris"] = gelecek ? 0 : kisiler.Count(k => k.GirisTarihi!.Value.Date >= bas && k.GirisTarihi.Value.Date < sonrakiBas),
+                    ["cikis"] = gelecek ? 0 : kisiler.Count(k => k.CikisTarihi is not null
+                                                            && k.CikisTarihi.Value.Date >= bas && k.CikisTarihi.Value.Date < sonrakiBas),
+                    ["subeSayisi"] = gelecek ? 0 : tumu
+                        .Where(k => k.GirisTarihi is not null && TurnoverCalisiyor(k, devam ? bugun : sonrakiBas.AddDays(-1)))
+                        .Where(magazaMi)
+                        .Select(k => (k.IsGrubu ?? "").Trim())
+                        .Where(x => x.Length > 0)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count(),
+                };
 
-                var donemBasi = kisiler.Count(k => Calisiyor(k, bas));
-                var donemSonu = devam
-                    ? kisiler.Count(k => Calisiyor(k, bugun))
-                    : kisiler.Count(k => Calisiyor(k, sonrakiBas));
+                /* Elle girilenler yerine geçer */
+                var deger = new Dictionary<string, int>(oto);
+                var elleAlanlar = new List<string>();
+                if (m is not null)
+                {
+                    var md = (IDictionary<string, object>)m;
+                    foreach (var alan in TurnoverAlanlari)
+                        if (md.TryGetValue(alan, out var v) && v is not null)
+                        {
+                            deger[alan] = Convert.ToInt32(v);
+                            elleAlanlar.Add(alan);
+                        }
+                }
 
-                var giris = kisiler.Count(k => k.GirisTarihi!.Value.Date >= bas && k.GirisTarihi.Value.Date < sonrakiBas);
-                var cikis = kisiler.Count(k => k.CikisTarihi is not null
-                                               && k.CikisTarihi.Value.Date >= bas && k.CikisTarihi.Value.Date < sonrakiBas);
-
-                var ortalama = (donemBasi + donemSonu) / 2.0;
-                var oran = ortalama > 0 ? cikis * 100.0 / ortalama : 0;
+                var ortalama = (deger["donemBasi"] + deger["donemSonu"]) / 2.0;
+                var oran = ortalama > 0 ? deger["cikis"] * 100.0 / ortalama : 0;
                 var yillik = oran * 12;
 
-                var subeSayisi = tumu
-                    .Where(k => k.GirisTarihi is not null && Calisiyor(k, devam ? bugun : sonrakiBas.AddDays(-1)))
-                    .Where(MagazaMi)
-                    .Select(k => (k.IsGrubu ?? "").Trim())
-                    .Where(x => x.Length > 0)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Count();
-
-                if (!devam) yillikOranlar.Add(yillik);
+                /* Süren ay ortalamaya girmez; elle tamamlanmışsa (çıkış ve dönem
+                   sonu girilmiş) girer */
+                var tamam = !devam && !gelecek || (elleAlanlar.Contains("cikis") && elleAlanlar.Contains("donemSonu"));
+                if (tamam && ortalama > 0) yillikOranlar.Add(yillik);
 
                 aylar.Add(new
                 {
                     ay,
                     bos = false,
-                    devam,
-                    subeSayisi,
-                    donemBasi,
-                    donemSonu,
-                    giris,
-                    cikis,
+                    devam = devam && !tamam,
+                    subeSayisi = deger["subeSayisi"],
+                    donemBasi = deger["donemBasi"],
+                    donemSonu = deger["donemSonu"],
+                    giris = deger["giris"],
+                    cikis = deger["cikis"],
                     ortalama = Math.Round(ortalama, 1),
                     oran = Math.Round(oran, 2),
-                    yillikOran = Math.Round(yillik, 1)
+                    yillikOran = Math.Round(yillik, 1),
+                    oto,
+                    elle = elleAlanlar,
+                    elleGuncelleyen = m is null ? null : (string)m.guncelleyen,
+                    elleTarih = m is null ? (DateTime?)null : (DateTime)m.guncelleme,
                 });
             }
 
-            /* Yıl içinde çıkanlar: sebep, birim ve çalışma süresi dağılımı (pasta grafikler) */
+            /* Yıl içinde çıkanlar (pasta grafikler, Mikro kayıtlarından) */
             var yilBas = new DateTime(y, 1, 1);
             var yilSon = yilBas.AddYears(1);
             var cikanlar = kisiler.Where(k => k.CikisTarihi is not null
@@ -137,27 +218,16 @@ public partial class PersonelController
 
             static List<object> Dagilim(IEnumerable<string> l, int enFazla)
             {
-                var g = l.GroupBy(x => string.IsNullOrWhiteSpace(x) ? "Belirtilmemiş" : x.Trim())
+                var g = l.GroupBy(Etiket)
                     .Select(x => (ad: x.Key, adet: x.Count()))
                     .OrderByDescending(x => x.adet)
                     .ToList();
-                var ust = g.Take(enFazla).Select(x => (object)new { ad = x.ad, adet = x.adet }).ToList();
-                var kalan = g.Skip(enFazla).Sum(x => x.adet);
-                if (kalan > 0) ust.Add(new { ad = "Diğer", adet = kalan });
+                var ust = g.Take(enFazla).Select(x => (object)new { ad = x.ad, adet = x.adet, digerMi = false }).ToList();
+                var kalan = g.Skip(enFazla).ToList();
+                if (kalan.Count > 0)
+                    ust.Add(new { ad = "Diğer", adet = kalan.Sum(x => x.adet), digerMi = true, icindekiler = kalan.Select(x => x.ad).ToList() });
                 return ust;
             }
-
-            static string SureDilimi(PersonelKaydi k)
-            {
-                var gun = (k.CikisTarihi!.Value.Date - k.GirisTarihi!.Value.Date).TotalDays;
-                return gun < 30 ? "1 aydan az"
-                    : gun < 90 ? "1–3 ay"
-                    : gun < 365 ? "3–12 ay"
-                    : gun < 365 * 3 ? "1–3 yıl"
-                    : "3 yıldan fazla";
-            }
-
-            var sureSirasi = new[] { "1 aydan az", "1–3 ay", "3–12 ay", "1–3 yıl", "3 yıldan fazla" };
 
             return new
             {
@@ -168,8 +238,8 @@ public partial class PersonelController
                 toplamCikis = cikanlar.Count,
                 sebepler = Dagilim(cikanlar.Select(x => x.CikisSebebi), 7),
                 birimler = Dagilim(cikanlar.Select(x => x.IsGrubu), 8),
-                sureler = sureSirasi
-                    .Select(s => new { ad = s, adet = cikanlar.Count(k => SureDilimi(k) == s) })
+                sureler = SureDilimleri
+                    .Select(s => new { ad = s, adet = cikanlar.Count(k => SureDilimi(k) == s), digerMi = false })
                     .Where(x => x.adet > 0)
                     .ToList()
             };
@@ -177,9 +247,146 @@ public partial class PersonelController
 
         return Ok(new
         {
-            kapsam = yalnizMagaza ? "magaza" : "tumu",
+            kapsam = kapsamKodu,
+            duzenleyebilir = TurnoverDuzenleyebilir,
             buYil = Yil(buYil),
             gecenYil = Yil(buYil - 1)
         });
+    }
+
+    /* ==================================================================== */
+    /* Elle giriş                                                           */
+    /* ==================================================================== */
+
+    public sealed class TurnoverElleAy
+    {
+        public int Ay { get; set; }
+        public int? SubeSayisi { get; set; }
+        public int? DonemBasi { get; set; }
+        public int? DonemSonu { get; set; }
+        public int? Giris { get; set; }
+        public int? Cikis { get; set; }
+    }
+
+    public sealed class TurnoverElleGirdi
+    {
+        public int Yil { get; set; }
+        public string Kapsam { get; set; }
+        public List<TurnoverElleAy> Aylar { get; set; }
+    }
+
+    /// <summary>
+    /// Bir yılın elle girilen değerlerini kaydeder. Gönderilen her ay için
+    /// satır yeniden yazılır; bütün alanları boş gelen ayın satırı silinir
+    /// (o ay tamamen otomatiğe döner).
+    /// </summary>
+    [HttpPut("TurnoverManuel")]
+    public IActionResult TurnoverManuel([FromBody] TurnoverElleGirdi g)
+    {
+        if (!TurnoverDuzenleyebilir) return Forbid();
+        if (g is null || g.Yil < 2000 || g.Yil > 2100) return BadRequest(new { hata = "Yıl geçersiz." });
+
+        var kapsamKodu = string.Equals(g.Kapsam, "magaza", StringComparison.OrdinalIgnoreCase) ? "magaza" : "tumu";
+        var aylar = (g.Aylar ?? new()).Where(a => a.Ay is >= 1 and <= 12).ToList();
+
+        foreach (var a in aylar)
+            foreach (var v in new[] { a.SubeSayisi, a.DonemBasi, a.DonemSonu, a.Giris, a.Cikis })
+                if (v is < 0 or > 100000)
+                    return BadRequest(new { hata = $"{a.Ay}. ay: değerler 0 ile 100.000 arasında olmalı." });
+
+        using var db = _vt.Baglanti();
+        db.Open();
+        using var islem = db.BeginTransaction();
+
+        foreach (var a in aylar)
+        {
+            db.Execute("DELETE FROM KRY_TURNOVER_MANUEL WHERE yil = @yil AND ay = @ay AND kapsam = @k",
+                new { yil = g.Yil, ay = a.Ay, k = kapsamKodu }, islem);
+
+            if (a.SubeSayisi is null && a.DonemBasi is null && a.DonemSonu is null && a.Giris is null && a.Cikis is null)
+                continue;
+
+            db.Execute(@"
+INSERT INTO KRY_TURNOVER_MANUEL (yil, ay, kapsam, sube_sayisi, donem_basi, donem_sonu, giris, cikis, guncelleyen)
+VALUES (@yil, @ay, @k, @SubeSayisi, @DonemBasi, @DonemSonu, @Giris, @Cikis, @kim)",
+                new { yil = g.Yil, ay = a.Ay, k = kapsamKodu, a.SubeSayisi, a.DonemBasi, a.DonemSonu, a.Giris, a.Cikis, kim = Kullanici },
+                islem);
+        }
+
+        islem.Commit();
+        return Ok(new { tamam = true });
+    }
+
+    /* ==================================================================== */
+    /* Tıklanınca açılan liste                                              */
+    /* ==================================================================== */
+
+    /// <summary>
+    /// Bir sayının arkasındaki personel (Mikro kayıtlarından).
+    /// <para>
+    /// <c>tur</c>: cikis · giris · donemBasi · donemSonu. <c>ay</c> verilmezse
+    /// bütün yıl (yalnızca giriş/çıkış). Pasta dilimleri için <c>sebep</c>,
+    /// <c>birim</c> ya da <c>sure</c> süzgeci; "Diğer" dilimi için
+    /// <c>diger</c>=1 ve <c>haric</c> ilk dilimlerin adları (| ile).
+    /// </para>
+    /// </summary>
+    [HttpGet("TurnoverListe")]
+    public IActionResult TurnoverListe(
+        [FromQuery] int yil,
+        [FromQuery] int? ay,
+        [FromQuery] string tur = "cikis",
+        [FromQuery] string kapsam = "tumu",
+        [FromQuery] string sebep = null,
+        [FromQuery] string birim = null,
+        [FromQuery] string sure = null,
+        [FromQuery] string haric = null,
+        [FromServices] IzinFormuServisi izinFormu = null)
+    {
+        List<PersonelKaydi> kisiler;
+        try
+        {
+            (kisiler, _, _) = TurnoverKisileri(string.Equals(kapsam, "magaza", StringComparison.OrdinalIgnoreCase), izinFormu);
+        }
+        catch (Exception hata)
+        {
+            _kayit.LogError(hata, "Turnover listesi alınamadı");
+            return StatusCode(502, new { hata = "Personel veritabanına ulaşılamadı.", ayrinti = HataAyrintisi(hata) });
+        }
+
+        var bas = ay is >= 1 and <= 12 ? new DateTime(yil, ay.Value, 1) : new DateTime(yil, 1, 1);
+        var son = ay is >= 1 and <= 12 ? bas.AddMonths(1) : bas.AddYears(1);
+        var bugun = DateTime.Today;
+
+        IEnumerable<PersonelKaydi> l = (tur ?? "cikis").ToLowerInvariant() switch
+        {
+            "giris" => kisiler.Where(k => k.GirisTarihi!.Value.Date >= bas && k.GirisTarihi.Value.Date < son),
+            "donembasi" => kisiler.Where(k => TurnoverCalisiyor(k, bas)),
+            "donemsonu" => kisiler.Where(k => TurnoverCalisiyor(k, son > bugun ? bugun : son)),
+            _ => kisiler.Where(k => k.CikisTarihi is not null && k.CikisTarihi.Value.Date >= bas && k.CikisTarihi.Value.Date < son),
+        };
+
+        var haricler = (haric ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        bool Uyar(string deger, string suzgec) =>
+            suzgec is null
+            || (suzgec == "__diger__" ? !haricler.Contains(Etiket(deger)) : string.Equals(Etiket(deger), suzgec, StringComparison.OrdinalIgnoreCase));
+
+        l = l.Where(k => Uyar(k.CikisSebebi, sebep) && Uyar(k.IsGrubu, birim) && (sure is null || SureDilimi(k) == sure));
+
+        return Ok(l
+            .OrderByDescending(k => tur == "giris" ? k.GirisTarihi : k.CikisTarihi ?? k.GirisTarihi)
+            .Select(k => new
+            {
+                k.PersonelKodu,
+                adSoyad = $"{k.Ad} {k.Soyad}".Trim(),
+                birim = k.IsGrubu,
+                k.Pozisyon,
+                k.GirisTarihi,
+                k.CikisTarihi,
+                k.CikisSebebi,
+                sure = k.CikisTarihi is null ? null : SureDilimi(k),
+                calismaGun = k.GirisTarihi is null ? (int?)null
+                    : (int)((k.CikisTarihi ?? bugun).Date - k.GirisTarihi.Value.Date).TotalDays
+            })
+            .ToList());
     }
 }
