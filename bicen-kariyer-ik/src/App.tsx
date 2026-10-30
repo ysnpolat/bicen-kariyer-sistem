@@ -140,7 +140,7 @@ import { RENK } from "./sabitler";
 import Yenilikler from "./Yenilikler";
 import Talep from "./Talep";
 import Talepler from "./Talepler";
-import { okunmamisSayisi, gorunenYenilikler } from "./yenilikler";
+import { okunmamisSayisi, gorunenYenilikler } from "./yenilikListesi";
 import { panelGorunumYenile } from "./panelGorunum";
 
 dayjs.locale("tr");

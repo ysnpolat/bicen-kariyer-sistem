@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 
 import type { Oturum } from "./api";
 import { sayfayaGit } from "./gecis";
-import { gorunenYenilikler } from "./yenilikler";
+import { gorunenYenilikler } from "./yenilikListesi";
 import type { Yenilik } from "./yenilikler/ortak";
 
 type Props = {
