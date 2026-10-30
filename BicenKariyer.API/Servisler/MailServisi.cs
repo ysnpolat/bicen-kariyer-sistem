@@ -687,6 +687,58 @@ public class MailServisi
     }
 
     /* ==================================================================== */
+    /* Yönetime: yeni talep / öneri (30.10.2026)                            */
+    /* ==================================================================== */
+
+    /// <summary>
+    /// Panelden yazılan sorun bildirimi ya da öneri için yönetime giden
+    /// e-posta gövdesi. Kullanıcı metni HTML'e kaçırılır; panel bağlantısı
+    /// ayardaki site adresinden kurulur, istekteki Host kullanılmaz.
+    /// </summary>
+    public string TalepBildirimGovdesi(
+        int id, string turAdi, string adSoyad, string rol, string ekran, string yol,
+        string surum, string metin, int gorselSayisi, DateTime zaman)
+    {
+        var site = SiteAdresi();
+        var icerik = new StringBuilder();
+
+        icerik.Append($@"
+        <tr>
+          <td align=""center"" style=""padding:18px 32px 0"">
+            <span style=""display:inline-block;background:{YesilAcik};color:{YesilKoyu};
+                         font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:20px"">
+              Talep #{id} · {Kacir(turAdi)}
+            </span>
+          </td>
+        </tr>");
+
+        icerik.Append(Paragraf(
+            $@"<strong style=""font-size:16px"">{Kacir(adSoyad)}</strong> panelden yeni bir
+               {Kacir(turAdi.ToLowerInvariant())} gönderdi.", "16px"));
+
+        icerik.Append(BilgiTablosu(
+            ("Kim", $"{adSoyad} · {rol}"),
+            ("Ekran", string.IsNullOrWhiteSpace(yol) ? ekran : $"{ekran} ({yol})"),
+            ("Zaman", zaman.ToString("dd.MM.yyyy HH:mm")),
+            ("Panel sürümü", surum),
+            ("Görsel", gorselSayisi > 0 ? $"{gorselSayisi} adet (panelde görünür)" : "")));
+
+        icerik.Append(Paragraf(
+            $@"<div style=""white-space:pre-wrap;background:#F6F8F4;border:1px solid {Cizgi};
+                          border-radius:10px;padding:14px 16px"">{Kacir(metin)}</div>", "18px"));
+
+        icerik.Append(Dugme("Panelde Cevapla", $"{site}/panel#talepler", Siyah));
+        icerik.Append(Bosluk());
+
+        return Cerceve(
+            turAdi == "Öneri" ? "Yeni Öneri" : "Yeni Sorun Bildirimi",
+            turAdi == "Öneri" ? Yesil : Turuncu,
+            icerik.ToString(),
+            "Talebi İK panelindeki Talep ve Öneriler sayfasından cevaplayabilirsiniz; " +
+            "cevap kullanıcıya zil bildirimiyle ulaşır.");
+    }
+
+    /* ==================================================================== */
     /* Yardımcılar                                                          */
     /* ==================================================================== */
 

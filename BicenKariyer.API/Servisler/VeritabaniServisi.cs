@@ -5198,6 +5198,70 @@ END");
         {
             // Kurulamazsa Yönetim sayfasında son değişiklik bilgisi görünmez
         }
+
+        /* Yenilikler ve Talep/Öneri (30.10.2026).
+
+           KRY_KULLANICI_TERCIH: kişiye özel küçük tercihler (anahtar-değer).
+           İlk kullanım "Yenilikler.SonOkunan": kullanıcının okuduğu en
+           büyük yenilik numarası. Yenilik listesi veritabanında değil,
+           panel kodunun içinde (bicen-kariyer-ik/src/yenilikler/).
+
+           KRY_TALEP: panel kullanıcılarının her ekrandan yazdığı sorun
+           bildirimi ve öneriler; yönetim cevaplar, kullanıcı zilden görür.
+           KRY_TALEP_GORSEL: talep başına en çok 3 ekran görüntüsü. */
+        try
+        {
+            db.Execute(@"
+IF OBJECT_ID('KRY_KULLANICI_TERCIH') IS NULL
+BEGIN
+    CREATE TABLE KRY_KULLANICI_TERCIH (
+        kullanici  NVARCHAR(60)  NOT NULL,
+        anahtar    NVARCHAR(50)  NOT NULL,
+        deger      NVARCHAR(400) NOT NULL,
+        degisim    DATETIME2     NOT NULL DEFAULT SYSDATETIME(),
+        CONSTRAINT PK_KRY_KULLANICI_TERCIH PRIMARY KEY (kullanici, anahtar)
+    );
+END
+
+IF OBJECT_ID('KRY_TALEP') IS NULL
+BEGIN
+    CREATE TABLE KRY_TALEP (
+        id             INT IDENTITY(1,1) PRIMARY KEY,
+        kullanici      NVARCHAR(60)   NOT NULL,
+        ad_soyad       NVARCHAR(100)  NOT NULL,
+        rol            NVARCHAR(40)   NULL,
+        tur            TINYINT        NOT NULL,              -- 1 sorun, 2 oneri
+        ekran          NVARCHAR(100)  NULL,
+        yol            NVARCHAR(200)  NULL,
+        metin          NVARCHAR(2000) NOT NULL,
+        surum          NVARCHAR(20)   NULL,
+        durum          TINYINT        NOT NULL DEFAULT(0),   -- 0 yeni 1 inceleniyor 2 planlandi 3 tamamlandi 4 yapilmayacak
+        cevap          NVARCHAR(2000) NULL,
+        cevaplayan     NVARCHAR(100)  NULL,
+        cevap_zamani   DATETIME2      NULL,
+        olusturma      DATETIME2      NOT NULL DEFAULT SYSDATETIME()
+    );
+    CREATE INDEX IX_KRY_TALEP_kullanici ON KRY_TALEP(kullanici, olusturma DESC);
+    CREATE INDEX IX_KRY_TALEP_durum ON KRY_TALEP(durum, olusturma DESC);
+END
+
+IF OBJECT_ID('KRY_TALEP_GORSEL') IS NULL
+BEGIN
+    CREATE TABLE KRY_TALEP_GORSEL (
+        id        INT IDENTITY(1,1) PRIMARY KEY,
+        talep_id  INT            NOT NULL REFERENCES KRY_TALEP(id) ON DELETE CASCADE,
+        sira      TINYINT        NOT NULL,
+        tur       VARCHAR(20)    NOT NULL,
+        veri      VARBINARY(MAX) NOT NULL,
+        olusturma DATETIME2      NOT NULL DEFAULT SYSDATETIME(),
+        CONSTRAINT UQ_KRY_TALEP_GORSEL UNIQUE (talep_id, sira)
+    );
+END");
+        }
+        catch (Exception)
+        {
+            // Kurulamazsa Yenilikler penceresi her girişte açılır, talep yazılamaz
+        }
     }
 
     private void YoneticiOlustur(IDbConnection db)

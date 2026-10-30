@@ -317,6 +317,9 @@ kurucu.Services
                     /* Biçen360 patron görünümü fotoğrafları: WebView
                        sayfalarındaki img etiketi başlık gönderemiyor */
                     || baglam.Request.Path.StartsWithSegments("/api/PatronMobil/Foto")
+                    /* Talep görselleri: Talep penceresi ve Talepler sayfasındaki img (30.10.2026) */
+                    || (yol.StartsWith("/api/Talep/", StringComparison.OrdinalIgnoreCase)
+                        && yol.Contains("/Gorsel/", StringComparison.OrdinalIgnoreCase))
                     || (yol.StartsWith("/api/Basvuru/", StringComparison.OrdinalIgnoreCase)
                         && yol.EndsWith("/Fotograf", StringComparison.OrdinalIgnoreCase))
 

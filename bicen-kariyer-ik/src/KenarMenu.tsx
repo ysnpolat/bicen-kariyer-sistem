@@ -41,6 +41,8 @@ import {
   ChevronRight,
   Circle,
   LogOut,
+  MessageSquarePlus,
+  Sparkles,
   Moon,
   Search,
   Star,
@@ -252,6 +254,12 @@ type Props = {
   kullaniciMenusu: MenuProps["items"];
   cikis: () => void;
 
+  /** Yenilikler penceresi (tüm liste) ve okunmamış sayısı (30.10.2026) */
+  yenilikAc?: () => void;
+  yenilikSayisi?: number;
+  /** Talep / Öneri penceresi */
+  talepAc?: () => void;
+
   dar: boolean;
   darDegistir: (dar: boolean) => void;
   tema: MenuTema;
@@ -346,6 +354,9 @@ export default function KenarMenu({
   rolAdi,
   kullaniciMenusu,
   cikis,
+  yenilikAc,
+  yenilikSayisi = 0,
+  talepAc,
   dar: darIstek,
   darDegistir,
   tema,
@@ -762,6 +773,34 @@ export default function KenarMenu({
       </nav>
 
       <div className="km-alt">
+        {(yenilikAc || talepAc) && (
+          <div className="km-yardim">
+            {yenilikAc && (
+              <button
+                type="button"
+                className={`km-yardim-btn${yenilikSayisi > 0 ? " km-yeni-var" : ""}`}
+                onClick={yenilikAc}
+                title="Yenilikler"
+                aria-label={yenilikSayisi > 0 ? `Yenilikler, ${yenilikSayisi} okunmamış` : "Yenilikler"}
+              >
+                <span className="km-yardim-ikon">
+                  <Sparkles size={16} strokeWidth={1.9} aria-hidden />
+                  {yenilikSayisi > 0 && <i className="km-yardim-nokta" aria-hidden />}
+                </span>
+                <span className="km-yardim-metin">Yenilikler</span>
+              </button>
+            )}
+            {talepAc && (
+              <button type="button" className="km-yardim-btn" onClick={talepAc} title="Talep / Öneri" aria-label="Talep / Öneri">
+                <span className="km-yardim-ikon">
+                  <MessageSquarePlus size={16} strokeWidth={1.9} aria-hidden />
+                </span>
+                <span className="km-yardim-metin">Talep / Öneri</span>
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="km-kullanici">
           <Dropdown menu={{ items: kullaniciMenusu }} trigger={["click"]} placement="topLeft">
             <button

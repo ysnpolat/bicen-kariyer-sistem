@@ -49,6 +49,7 @@ import {
   Kanban,
   MessagesSquare,
   Scale,
+  Inbox,
 } from "lucide-react";
 
 import Basvurular from "./Basvurular";
@@ -136,6 +137,10 @@ import {
   haberYonetimi,
 } from "./api";
 import { RENK } from "./sabitler";
+import Yenilikler from "./Yenilikler";
+import Talep from "./Talep";
+import Talepler from "./Talepler";
+import { okunmamisSayisi, gorunenYenilikler } from "./yenilikler";
 import { panelGorunumYenile } from "./panelGorunum";
 
 dayjs.locale("tr");
@@ -395,6 +400,40 @@ export default function App() {
 
   const [profilAcik, setProfilAcik] = useState(false);
 
+  /* Yenilikler ve Talep/Öneri (30.10.2026).
+     okunan: sunucudaki "son okunan yenilik no"; null = henüz alınmadı. */
+  const [okunan, setOkunan] = useState<number | null | undefined>(undefined);
+  const [yenilikKip, setYenilikKip] = useState<"yeni" | "hepsi" | null>(null);
+  const [talepAcik, setTalepAcik] = useState(false);
+
+  useEffect(() => {
+    if (!oturum?.token) return;
+    let iptal = false;
+    api
+      .al<{ no: number | null }>("/api/Yenilikler/Okunan")
+      .then((c) => {
+        if (iptal) return;
+        setOkunan(c?.no ?? null);
+        /* Okunmamış ve yetkiye giren yenilik varsa pencere kendiliğinden açılır */
+        if (okunmamisSayisi(oturum, c?.no ?? null) > 0) setYenilikKip("yeni");
+      })
+      .catch(() => {
+        if (!iptal) setOkunan(null);
+      });
+    return () => {
+      iptal = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oturum?.token]);
+
+  const yenilikKapat = (enBuyuk: number | null) => {
+    setYenilikKip(null);
+    if (enBuyuk === null || !oturum || oturum.taklitEden) return;
+    if ((okunan ?? 0) >= enBuyuk) return;
+    setOkunan(enBuyuk);
+    api.guncelle("/api/Yenilikler/Okunan", { no: enBuyuk }).catch(() => undefined);
+  };
+
   /* Telefonda menü çekmece olarak açılır.
 
      Bu iki satır aşağıda, oturum denetimlerinin ARDINDA duruyordu.
@@ -634,7 +673,7 @@ export default function App() {
        İzin grubundaki sayfaları İK günlük kullanıyor, bu ise yalnızca
        yöneticinin baktığı bir rapor. */
     { ad: "Kart ve Raporlar", anahtarlar: ["bicenkart", "rapor", "izinucreti"] },
-    { ad: "Sistem", anahtarlar: ["yonetim", "test"] },
+    { ad: "Sistem", anahtarlar: ["yonetim", "talepler", "test"] },
   ];
 
   /* Tüm menü kataloğu — koşulsuz. Rol ayarı doluyken menü buradan
@@ -678,6 +717,7 @@ export default function App() {
     { key: "vardiyakarekod", label: "Vardiya Karekodları", icon: <QrCode size={16} strokeWidth={2} /> },
     { key: "qr", label: "QR Kodlar", icon: <QrCode size={16} strokeWidth={2} /> },
     { key: "yonetim", label: "Yönetim", icon: <Settings2 size={16} strokeWidth={2} /> },
+    { key: "talepler", label: "Talep ve Öneriler", icon: <Inbox size={16} strokeWidth={2} /> },
     { key: "performans", label: "İK Performans", icon: <Gauge size={16} strokeWidth={2} /> },
     { key: "personelperformansGrup", label: "Personel Performansı",
       icon: <TrendingUp size={16} strokeWidth={2} />,
@@ -900,6 +940,18 @@ export default function App() {
         ]
       : []),
 
+    /* Talep ve Öneriler (30.10.2026): varsayılan olarak yönetimde; Rol
+       Yetkileri'nden başka rollere de açılabilir */
+    ...(tamYonetim(oturum)
+      ? [
+          {
+            key: "talepler",
+            label: "Talep ve Öneriler",
+            icon: <Inbox size={16} strokeWidth={2} />,
+          },
+        ]
+      : []),
+
     /* İK performans yalnızca üst yönetimde */
     ...(performansGorme(oturum)
       ? [
@@ -1044,6 +1096,8 @@ export default function App() {
         return <PrimHakedis />;
       case "performans":
         return <Performans />;
+      case "talepler":
+        return <Talepler />;
       case "test":
         return testAcik ? <TestVerisi /> : <Basvurular />;
       default:
@@ -1305,6 +1359,12 @@ export default function App() {
       rolAdi={rolAdi}
       kullaniciMenusu={kullaniciMenusu}
       cikis={cikis}
+      yenilikAc={() => setYenilikKip("hepsi")}
+      yenilikSayisi={okunan === undefined ? 0 : okunmamisSayisi(oturum, okunan)}
+      talepAc={() => {
+        setTalepAcik(true);
+        if (cekmece) setMenuAcik(false);
+      }}
       dar={kapali}
       darDegistir={setKapali}
       tema={menuTemasi}
@@ -1446,6 +1506,27 @@ export default function App() {
 
         {/* Yeni mesajda ses ve sağ alttaki bildirim kartı; tüm ekranlarda */}
         {!yalnizcaFotograf(oturum) && <MesajBildirim sayfa={sekme} />}
+
+        {/* Yenilikler: girişte okunmamış varsa "yeni" kipinde kendiliğinden,
+            menüdeki düğmeden "hepsi" kipinde (30.10.2026) */}
+        {yenilikKip !== null && gorunenYenilikler(oturum).length > 0 && (
+          <Yenilikler
+            acik
+            kip={yenilikKip}
+            oturum={oturum}
+            okunan={okunan ?? null}
+            kapat={yenilikKapat}
+          />
+        )}
+
+        {/* Her ekrandan sorun bildirimi / öneri */}
+        <Talep
+          acik={talepAcik}
+          kapat={() => setTalepAcik(false)}
+          oturum={oturum}
+          ekran={yol ? `${yol.grup} / ${yol.ust ? `${yol.ust} / ` : ""}${yol.ad}` : String(baslik || sekme)}
+          sekme={sekme}
+        />
       </AntdApp>
     </ConfigProvider>
   );

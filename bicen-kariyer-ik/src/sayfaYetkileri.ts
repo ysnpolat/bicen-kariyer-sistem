@@ -104,6 +104,7 @@ export const SAYFA_GRUPLARI: SayfaGrubu[] = [
     aciklama: "Ayarlar ve yalnızca yöneticiye açık araçlar",
     sayfalar: [
       { key: "yonetim", ad: "Yönetim" },
+      { key: "talepler", ad: "Talep ve Öneriler", aciklama: "Kullanıcıların sorun bildirimi ve önerilerini görür, cevaplar" },
       { key: "zeka", ad: "İnceleme", yalnizYonetici: true },
       { key: "erisim", ad: "Erişim Denetimi", yalnizYonetici: true },
     ],

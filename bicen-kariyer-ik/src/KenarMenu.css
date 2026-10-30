@@ -779,3 +779,81 @@
 .km-dar.km-onizleme .km-onizleme-cizgi {
   margin: 0 18px 8px;
 }
+
+/* ------------------------------------------------ yenilikler / talep (30.10.2026) */
+
+.km-yardim {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.km-yardim-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border: 1px solid var(--km-cizgi);
+  border-radius: 10px;
+  background: var(--km-sb2);
+  color: var(--km-metin);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.km-yardim-btn:hover {
+  background: var(--km-hover);
+  color: var(--km-aktif-metin);
+}
+
+.km-yardim-ikon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.km-yardim-nokta {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #52c41a;
+  border: 2px solid var(--km-sb);
+  box-sizing: content-box;
+}
+
+.km-yeni-var {
+  border-color: rgba(82, 196, 26, 0.55);
+}
+
+.km-yardim-metin {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.km-dar .km-yardim {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.km-dar .km-yardim-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.km-dar .km-yardim-metin {
+  display: none;
+}

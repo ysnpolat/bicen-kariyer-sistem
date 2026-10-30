@@ -44,6 +44,7 @@ const KONU: { k: string; ad: string; renk: string; turler: string[]; sayfa?: str
   { k: "isemri", ad: "İş emirleri", renk: "#722ed1", turler: ["is_emri", "is_emri_bitti"], sayfa: "isemri" },
   { k: "kart", ad: "Biçen Kart", renk: "#5f8c10", turler: ["puan", "puan_onay", "kart_ayrilan"], sayfa: "bicenkart" },
   { k: "personel", ad: "Personel", renk: "#d9a21b", turler: ["ayrilik_uyarisi", "pusula_itiraz", "etik"] },
+  { k: "talep", ad: "Taleplerim", renk: "#13c2c2", turler: ["talep_cevap"] },
 ];
 
 const konuBul = (tur: string) => KONU.find((x) => x.turler.includes(tur)) ?? { k: "diger", ad: "Diğer", renk: "#8a929b", turler: [] };
