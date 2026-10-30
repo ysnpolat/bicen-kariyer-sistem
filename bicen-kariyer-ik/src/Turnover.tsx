@@ -165,11 +165,15 @@ function YilTablosu({
   duzenleyebilir,
   listeAc,
   kaydet,
+  alanlar = ALANLAR,
+  baslik,
 }: {
   v: YilVerisi;
   duzenleyebilir: boolean;
   listeAc: ListeAc;
   kaydet: (yil: number, aylar: { ay: number; degerler: Partial<Record<Alan, number | null>> }[]) => Promise<boolean>;
+  alanlar?: { k: Alan; ad: string }[];
+  baslik?: string;
 }) {
   const [duzen, setDuzen] = useState(false);
   const [taslak, setTaslak] = useState<Record<number, Partial<Record<Alan, number | null>>>>({});
@@ -277,7 +281,7 @@ function YilTablosu({
           <thead>
             <tr>
               <th colSpan={13} style={{ ...hucre, background: "#c4d79b", fontWeight: 800 }}>
-                {v.yil} TURNOVER ORANI
+                {baslik ?? `${v.yil} TURNOVER ORANI`}
               </th>
             </tr>
             <tr>
@@ -291,7 +295,7 @@ function YilTablosu({
             </tr>
           </thead>
           <tbody>
-            {ALANLAR.map(({ k, ad }) => (
+            {alanlar.map(({ k, ad }) => (
               <tr key={k}>
                 <td style={etiket}>{ad}</td>
                 {v.aylar.map((a) => {
@@ -782,6 +786,213 @@ function Pasta({
   );
 }
 
+/* ------------------------------------------------------ şube bazında aylık */
+
+interface SubeAyi {
+  ay: number;
+  bos: boolean;
+  devam?: boolean;
+  donemBasi?: number;
+  donemSonu?: number;
+  giris?: number;
+  cikis?: number;
+  ortalama?: number;
+  oran?: number;
+  yillikOran?: number;
+}
+
+interface SubeSatiri {
+  sube: string;
+  aylar: SubeAyi[];
+  toplamGiris: number;
+  toplamCikis: number;
+  ortalamaCalisan: number | null;
+  ortalamaYillikOran: number | null;
+  mevcut: number;
+}
+
+type Olcu = "oran" | "cikis" | "giris" | "ortalama";
+
+const BOS_KAYDET = async () => false;
+
+function SubeBazinda({ yil, kapsam, listeAc }: { yil: number; kapsam: string; listeAc: ListeAc }) {
+  const { message } = AntdApp.useApp();
+  const [subeler, setSubeler] = useState<SubeSatiri[]>([]);
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const [olcu, setOlcu] = useState<Olcu>("oran");
+  const [ara, setAra] = useState("");
+  const [secili, setSecili] = useState<SubeSatiri | null>(null);
+
+  useEffect(() => {
+    let iptal = false;
+    setYukleniyor(true);
+    api
+      .al<{ subeler: SubeSatiri[] }>(`/api/Personel/TurnoverSube?yil=${yil}&kapsam=${kapsam}`)
+      .then((d) => !iptal && setSubeler(d?.subeler ?? []))
+      .catch((h) => !iptal && message.error(h?.message ?? "Şube verisi alınamadı."))
+      .finally(() => !iptal && setYukleniyor(false));
+    return () => {
+      iptal = true;
+    };
+  }, [yil, kapsam, message]);
+
+  const a = ara.trim().toLocaleLowerCase("tr-TR");
+  const gorunen = a ? subeler.filter((x) => x.sube.toLocaleLowerCase("tr-TR").includes(a)) : subeler;
+
+  const deger = (m: SubeAyi): number | undefined =>
+    olcu === "oran" ? m.yillikOran : olcu === "cikis" ? m.cikis : olcu === "giris" ? m.giris : m.ortalama;
+
+  const yilDegeri = (x: SubeSatiri): number | null =>
+    olcu === "oran" ? x.ortalamaYillikOran : olcu === "cikis" ? x.toplamCikis : olcu === "giris" ? x.toplamGiris : x.ortalamaCalisan;
+
+  const hucreAc = (x: SubeSatiri, m?: SubeAyi) => {
+    const tur: ListeIstegi["tur"] = olcu === "giris" ? "giris" : olcu === "ortalama" ? "donemSonu" : "cikis";
+    const turAdi = tur === "giris" ? "girişler" : tur === "donemSonu" ? "çalışanlar (dönem sonu)" : "çıkışlar";
+    listeAc({
+      baslik: `${x.sube} · ${m ? `${AYLAR[m.ay - 1]} ` : ""}${yil} · ${turAdi}`,
+      yil,
+      ay: m?.ay,
+      tur,
+      birim: x.sube,
+      ekranSayisi: m ? (tur === "giris" ? m.giris : tur === "cikis" ? m.cikis : m.donemSonu) : undefined,
+    });
+  };
+
+  const goster = (v: number | undefined | null) =>
+    v === null || v === undefined ? "" : olcu === "oran" ? yuzde(v) : olcu === "ortalama" ? sayi(v, v % 1 ? 1 : 0) : sayi(v);
+
+  const kolonlar: any[] = [
+    {
+      title: "Şube",
+      dataIndex: "sube",
+      fixed: "left",
+      width: 190,
+      sorter: (p: SubeSatiri, q: SubeSatiri) => p.sube.localeCompare(q.sube, "tr"),
+      render: (v: string, x: SubeSatiri) => (
+        <div>
+          <Tooltip title="Bu şubenin aylık tablosunu aç">
+            <a onClick={() => setSecili(x)} style={{ fontWeight: 700 }}>
+              {v}
+            </a>
+          </Tooltip>
+          <div style={{ fontSize: 11, color: "#8a929b" }}>{x.mevcut} çalışan</div>
+        </div>
+      ),
+    },
+    ...AYLAR.map((ad, i) => ({
+      title: AY_KISA[i],
+      key: `ay${i}`,
+      width: 66,
+      align: "center" as const,
+      sorter: (p: SubeSatiri, q: SubeSatiri) => (deger(p.aylar[i]) ?? -1) - (deger(q.aylar[i]) ?? -1),
+      onCell: (x: SubeSatiri) => {
+        const m = x.aylar[i];
+        const d = m && !m.bos ? deger(m) : undefined;
+        const r = olcu === "oran" && d !== undefined ? oranRengi(d) : null;
+        return {
+          style: {
+            ...(r ? { background: r.bg, color: r.fg, fontWeight: 700 } : {}),
+            ...(m?.devam ? { opacity: 0.6, fontStyle: "italic" } : {}),
+            ...(d !== undefined ? tiklanir : {}),
+          },
+          onClick: d !== undefined ? () => hucreAc(x, m) : undefined,
+          title: m && !m.bos ? `${ad} · ${m.cikis} çıkış, ${m.giris} giriş, ortalama ${sayi(m.ortalama, 1)} · %${sayi(m.yillikOran)} yıllık` : undefined,
+        };
+      },
+      render: (_: unknown, x: SubeSatiri) => {
+        const m = x.aylar[i];
+        if (!m || m.bos) return "";
+        const d = deger(m);
+        if (olcu !== "oran" && (d ?? 0) === 0) return <span style={{ color: "#c9cec4" }}>0</span>;
+        return goster(d);
+      },
+    })),
+    {
+      title: olcu === "oran" ? "Yıl ort." : olcu === "ortalama" ? "Ort." : "Toplam",
+      key: "yil",
+      width: 80,
+      align: "center" as const,
+      fixed: "right",
+      defaultSortOrder: "descend" as const,
+      sorter: (p: SubeSatiri, q: SubeSatiri) => (yilDegeri(p) ?? -1) - (yilDegeri(q) ?? -1),
+      onCell: (x: SubeSatiri) => {
+        const d = yilDegeri(x);
+        const r = olcu === "oran" && d !== null ? oranRengi(d) : null;
+        return {
+          style: { fontWeight: 800, ...(r ? { background: r.bg, color: r.fg } : {}), ...tiklanir },
+          onClick: () => hucreAc(x),
+        };
+      },
+      render: (_: unknown, x: SubeSatiri) => goster(yilDegeri(x)),
+    },
+  ];
+
+  /* Seçili şubenin Excel'deki gibi aylık tablosu */
+  const detay: YilVerisi | null = secili
+    ? {
+        yil,
+        aylar: secili.aylar.map((m) => ({ ...m }) as Ay),
+        ortalamaYillikOran: secili.ortalamaYillikOran,
+        toplamGiris: secili.toplamGiris,
+        toplamCikis: secili.toplamCikis,
+        sebepler: [],
+        birimler: [],
+        sureler: [],
+      }
+    : null;
+
+  return (
+    <Card
+      size="small"
+      title={`${yil} şube bazında aylık turnover`}
+      extra={
+        <Space wrap>
+          <Segmented
+            size="small"
+            value={olcu}
+            onChange={(v) => setOlcu(v as Olcu)}
+            options={[
+              { label: "Yıllık oran", value: "oran" },
+              { label: "Çıkış", value: "cikis" },
+              { label: "Giriş", value: "giris" },
+              { label: "Ortalama çalışan", value: "ortalama" },
+            ]}
+          />
+          <Input.Search size="small" allowClear placeholder="Şube ara" value={ara} onChange={(e) => setAra(e.target.value)} style={{ width: 180 }} />
+        </Space>
+      }
+    >
+      <Table<SubeSatiri>
+        size="small"
+        rowKey="sube"
+        loading={yukleniyor}
+        dataSource={gorunen}
+        columns={kolonlar}
+        pagination={false}
+        scroll={{ x: 1100, y: 520 }}
+        sticky
+      />
+      <div style={{ fontSize: 12, color: "#8a929b", marginTop: 6 }}>
+        Hücreye tıklayınca o şubenin o ayki listesi, şube adına tıklayınca aylık tablosu açılır. Personel bugünkü iş grubunda
+        sayılır (şube değiştirenin geçmişi yeni şubesinde görünür). Elle girilen şirket geneli değerleri bu tabloya yansımaz.
+      </div>
+
+      <Modal open={!!secili} onCancel={() => setSecili(null)} footer={null} width={1100} title={secili?.sube} destroyOnClose>
+        {detay && secili && (
+          <YilTablosu
+            v={detay}
+            duzenleyebilir={false}
+            kaydet={BOS_KAYDET}
+            alanlar={ALANLAR.filter((x) => x.k !== "subeSayisi")}
+            baslik={`${secili.sube} · ${yil} TURNOVER ORANI`}
+            listeAc={(i) => listeAc({ ...i, birim: secili.sube, baslik: `${secili.sube} · ${i.baslik}` })}
+          />
+        )}
+      </Modal>
+    </Card>
+  );
+}
+
 /* ---------------------------------------------------------- liste penceresi */
 
 interface ListeSatiri {
@@ -1129,6 +1340,10 @@ export default function Turnover() {
               </Card>
             </Col>
           </Row>
+
+          <div style={{ marginTop: 12 }}>
+            <SubeBazinda yil={bu.yil} kapsam={kapsam} listeAc={setListe} />
+          </div>
 
           <Row gutter={[12, 12]} style={{ marginTop: 12 }}>
             <Col xs={24} xl={12}>

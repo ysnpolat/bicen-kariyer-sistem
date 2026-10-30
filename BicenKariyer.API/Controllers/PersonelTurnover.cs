@@ -255,6 +255,111 @@ FROM KRY_TURNOVER_MANUEL WHERE kapsam = @k AND yil IN (@a, @b)",
     }
 
     /* ==================================================================== */
+    /* Şube bazında aylık                                                   */
+    /* ==================================================================== */
+
+    /// <summary>
+    /// Şube (iş grubu) bazında aylık turnover (30.10.2026). Her şube için
+    /// ana tablodaki aynı hesap: dönem başı, dönem sonu, giriş, çıkış,
+    /// ortalama, aylık ve yıllık oran. Kaynak Mikro kayıtları; personel
+    /// bugünkü iş grubuna yazılır (şube değiştirenin geçmişi yeni şubesinde
+    /// görünür). Elle girilen değerler şirket geneli içindir, burada yoktur.
+    /// </summary>
+    [HttpGet("TurnoverSube")]
+    public IActionResult TurnoverSube(
+        [FromQuery] int? yil,
+        [FromQuery] string kapsam = "tumu",
+        [FromServices] IzinFormuServisi izinFormu = null)
+    {
+        var y = yil ?? DateTime.Today.Year;
+
+        List<PersonelKaydi> kisiler;
+        try
+        {
+            (kisiler, _, _) = TurnoverKisileri(string.Equals(kapsam, "magaza", StringComparison.OrdinalIgnoreCase), izinFormu);
+        }
+        catch (Exception hata)
+        {
+            _kayit.LogError(hata, "Şube turnover verisi alınamadı");
+            return StatusCode(502, new { hata = "Personel veritabanına ulaşılamadı.", ayrinti = HataAyrintisi(hata) });
+        }
+
+        var bugun = DateTime.Today;
+        var yilBas = new DateTime(y, 1, 1);
+        var yilSon = yilBas.AddYears(1);
+
+        var subeler = kisiler
+            .GroupBy(k => Etiket(k.IsGrubu), StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var l = g.ToList();
+                var aylar = new List<object>();
+                var oranlar = new List<double>();
+                var ortalamalar = new List<double>();
+
+                for (var ay = 1; ay <= 12; ay++)
+                {
+                    var bas = new DateTime(y, ay, 1);
+                    var sonrakiBas = bas.AddMonths(1);
+                    if (bas > bugun)
+                    {
+                        aylar.Add(new { ay, bos = true });
+                        continue;
+                    }
+
+                    var devam = sonrakiBas > bugun;
+                    var sonTarih = devam ? bugun : sonrakiBas;
+                    var donemBasi = l.Count(k => TurnoverCalisiyor(k, bas));
+                    var donemSonu = l.Count(k => TurnoverCalisiyor(k, sonTarih));
+                    var giris = l.Count(k => k.GirisTarihi!.Value.Date >= bas && k.GirisTarihi.Value.Date < sonrakiBas);
+                    var cikis = l.Count(k => k.CikisTarihi is not null && k.CikisTarihi.Value.Date >= bas && k.CikisTarihi.Value.Date < sonrakiBas);
+                    var ortalama = (donemBasi + donemSonu) / 2.0;
+                    var oran = ortalama > 0 ? cikis * 100.0 / ortalama : 0;
+
+                    if (!devam && ortalama > 0)
+                    {
+                        oranlar.Add(oran * 12);
+                        ortalamalar.Add(ortalama);
+                    }
+
+                    aylar.Add(new
+                    {
+                        ay,
+                        bos = false,
+                        devam,
+                        donemBasi,
+                        donemSonu,
+                        giris,
+                        cikis,
+                        ortalama = Math.Round(ortalama, 1),
+                        oran = Math.Round(oran, 2),
+                        yillikOran = Math.Round(oran * 12, 1),
+                    });
+                }
+
+                var cikisYil = l.Count(k => k.CikisTarihi is not null && k.CikisTarihi.Value.Date >= yilBas && k.CikisTarihi.Value.Date < yilSon);
+                var girisYil = l.Count(k => k.GirisTarihi!.Value.Date >= yilBas && k.GirisTarihi.Value.Date < yilSon);
+
+                return new
+                {
+                    sube = g.Key,
+                    aylar,
+                    toplamGiris = girisYil,
+                    toplamCikis = cikisYil,
+                    ortalamaCalisan = ortalamalar.Count > 0 ? Math.Round(ortalamalar.Average(), 1) : (double?)null,
+                    ortalamaYillikOran = oranlar.Count > 0 ? Math.Round(oranlar.Average(), 1) : (double?)null,
+                    mevcut = l.Count(k => TurnoverCalisiyor(k, bugun)),
+                };
+            })
+            /* Yıl içinde hiç çalışanı olmayan şube listelenmez */
+            .Where(x => x.toplamGiris > 0 || x.toplamCikis > 0 || (x.ortalamaCalisan ?? 0) > 0 || x.mevcut > 0)
+            .OrderByDescending(x => x.ortalamaYillikOran ?? -1)
+            .ToList();
+
+        return Ok(new { yil = y, subeler });
+    }
+
+    /* ==================================================================== */
     /* Elle giriş                                                           */
     /* ==================================================================== */
 
