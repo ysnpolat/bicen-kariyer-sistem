@@ -97,7 +97,13 @@
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/10f4ce01-de18-40df-9206-a81086a604b5"
+      "url": "https://u.expo.dev/10f4ce01-de18-40df-9206-a81086a604b5",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

@@ -248,6 +248,43 @@ FROM KRY_KK_ONERI WHERE personel_kodu = @kod ORDER BY olusturma DESC",
         var p = Kendisi();
         if (p is null) return Unauthorized(new { hata = "Oturum geçersiz." });
 
+        return await OneriKaydet(p, urunAdi, barkod, neden, dosya,
+            p.PersonelKodu.Trim(), "mobil", "Öneri Biçen360'tan gönderildi");
+    }
+
+    /// <summary>
+    /// Personel adına panelden öneri (30.10.2026). Mobilde görsel
+    /// eklenemediği dönemde İK'nın öneriyi elle girebilmesi için; sonra da
+    /// telefonu olmayan personel için açık kalır. Görsel isteğe bağlı.
+    /// </summary>
+    [HttpPost("PanelOneri")]
+    [Authorize(Roles = PanelRolleri)]
+    [RequestSizeLimit(15_000_000)]
+    public async Task<IActionResult> PanelOneri([FromForm] string sicil, [FromForm] string urunAdi, [FromForm] string barkod,
+        [FromForm] string neden, IFormFile dosya)
+    {
+        var kod = (sicil ?? "").Trim();
+        if (kod.Length == 0) return BadRequest(new { hata = "Personeli seçiniz." });
+
+        var p = _personel.TumPersonelleriGetir()
+            .Where(x => string.Equals((x.PersonelKodu ?? "").Trim(), kod, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(x => x.Durum == 1)
+            .FirstOrDefault();
+        if (p is null) return BadRequest(new { hata = "Sicil bulunamadı." });
+
+        var giren = User?.Identity?.Name ?? "panel";
+        return await OneriKaydet(p, urunAdi, barkod, neden, dosya,
+            giren, "panel", $"Öneri panelden personel adına girildi ({giren})");
+    }
+
+    /// <summary>
+    /// Mobil ve panel önerisinin ortak kaydı. Görsel isteğe bağlı
+    /// (30.10.2026): mobil 1.9'da seçilen görsel kaydedilmiyordu, öneri
+    /// görselsiz de alınabilsin.
+    /// </summary>
+    private async Task<IActionResult> OneriKaydet(PersonelKaydi p, string urunAdi, string barkod, string neden,
+        IFormFile dosya, string yapan, string kaynak, string aciklama)
+    {
         var ad = (urunAdi ?? "").Trim();
         var (gecerli, b, barkodHata) = KazanKazanServisi.BarkodDenetle(barkod);
         var n = (neden ?? "").Trim();
@@ -257,7 +294,6 @@ FROM KRY_KK_ONERI WHERE personel_kodu = @kod ORDER BY olusturma DESC",
         if (!gecerli) return BadRequest(new { hata = barkodHata });
         if (n.Length < 10) return BadRequest(new { hata = "Ürünün neden satılması gerektiğini kısaca açıklayınız." });
         if (n.Length > 1000) n = n[..1000];
-        if (dosya is null || dosya.Length == 0) return BadRequest(new { hata = "Ürünün görselini ekleyiniz." });
 
         using var db = _vt.Baglanti();
 
@@ -279,12 +315,16 @@ FROM KRY_KK_ONERI WHERE personel_kodu = @kod ORDER BY olusturma DESC",
             return StatusCode(503, new { hata = "Barkod şu an kontrol edilemiyor, biraz sonra tekrar deneyiniz." });
         }
 
-        var uzanti = Path.GetExtension(dosya.FileName ?? "").ToLowerInvariant();
-        if (uzanti is not (".jpg" or ".jpeg" or ".png" or ".heic" or ".webp" or ".pdf" or ".mp4" or ".mov")) uzanti = ".jpg";
-        var dosyaAdi = $"{DateTime.Now:yyyyMMdd}_{p.PersonelKodu.Trim()}_{Guid.NewGuid():N}{uzanti}";
+        string dosyaAdi = null;
+        if (dosya is not null && dosya.Length > 0)
+        {
+            var uzanti = Path.GetExtension(dosya.FileName ?? "").ToLowerInvariant();
+            if (uzanti is not (".jpg" or ".jpeg" or ".png" or ".heic" or ".webp" or ".pdf" or ".mp4" or ".mov")) uzanti = ".jpg";
+            dosyaAdi = $"{DateTime.Now:yyyyMMdd}_{p.PersonelKodu.Trim()}_{Guid.NewGuid():N}{uzanti}";
 
-        await using (var akis = new FileStream(Path.Combine(GorselKlasoru(), dosyaAdi), FileMode.Create))
+            await using var akis = new FileStream(Path.Combine(GorselKlasoru(), dosyaAdi), FileMode.Create);
             await dosya.CopyToAsync(akis);
+        }
 
         var id = db.ExecuteScalar<int>(@"
 INSERT INTO KRY_KK_ONERI (aktivite, personel_kodu, ad_soyad, sube_adi, pozisyon, urun_adi, barkod, neden, gorsel, stok_kodu)
@@ -296,7 +336,7 @@ VALUES (N'yeniurun', @kod, @adSoyad, @sube, @pozisyon, @ad, @b, @n, @dosyaAdi, @
                 ad, b, n, dosyaAdi, stokKodu,
             });
 
-        Hareket(db, id, null, "degerlendiriliyor", "Öneri Biçen360'tan gönderildi", p.PersonelKodu.Trim(), "mobil");
+        Hareket(db, id, null, "degerlendiriliyor", aciklama, yapan, kaynak);
 
         return Ok(new { id, urunAdi = ad });
     }

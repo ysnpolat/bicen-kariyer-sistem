@@ -34,7 +34,8 @@
     "expo-video": "~58.0.12",
     "@expo/ngrok": "npm:expo-cloudflared@^4.2.0",
     "expo-image-picker": "~58.0.10",
-    "expo-document-picker": "~58.0.4"
+    "expo-document-picker": "~58.0.4",
+    "expo-updates": "~58.0.18"
   },
   "private": true
 }

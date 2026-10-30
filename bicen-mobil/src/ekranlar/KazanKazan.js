@@ -402,7 +402,8 @@ function FormGorunum({ kisi, gonderildi }) {
   }, [barkod]);
 
   const uygun = denetim?.durum === "uygun";
-  const tamam = urunAdi.trim().length >= 2 && uygun && neden.trim().length >= 10 && !!gorsel;
+  /* Görsel isteğe bağlı (30.10.2026) */
+  const tamam = urunAdi.trim().length >= 2 && uygun && neden.trim().length >= 10;
 
   const gorselSec = async (kamera) => {
     try {
@@ -556,7 +557,7 @@ function FormGorunum({ kisi, gonderildi }) {
             />
           </Alan>
 
-          <Alan etiket="Ürünün görseli">
+          <Alan etiket="Ürünün görseli" zorunlu={false} ipucu="İsteğe bağlı; eklerseniz değerlendirme kolaylaşır.">
             {gorsel ? (
               <View style={s.gorselKutu}>
                 <Image source={{ uri: gorsel }} style={s.gorselOnizleme} />

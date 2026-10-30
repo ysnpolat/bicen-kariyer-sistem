@@ -15,7 +15,8 @@
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "deneme"
     },
     "production": {
       "autoIncrement": true,
@@ -25,13 +26,15 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "node": "22.20.0"
+      "node": "22.20.0",
+      "channel": "production"
     },
     "denemeAndroid": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "deneme"
     }
   },
   "submit": {

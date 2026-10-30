@@ -826,6 +826,13 @@ export const kazanKazanBarkod = (barkod) =>
  * fotoğrafıyla aynı yoldan (uploadAsync, yoksa FormData).
  */
 export const kazanKazanOneri = async ({ urunAdi, barkod, neden }, dosyaAdresi) => {
+  /* Görsel isteğe bağlı (30.10.2026): görselsiz öneri düz form olarak gider */
+  if (!dosyaAdresi) {
+    const form = new FormData();
+    Object.entries({ urunAdi, barkod, neden }).forEach(([k, v]) => form.append(k, String(v ?? "")));
+    return dosyaGonder("/api/KazanKazan/Oneri", form);
+  }
+
   const uzanti = (String(dosyaAdresi).split("?")[0].split(".").pop() || "jpg").toLowerCase();
   const tur = uzanti === "png" ? "image/png" : uzanti === "pdf" ? "application/pdf" : uzanti === "mp4" ? "video/mp4" : "image/jpeg";
   const alanlar = { urunAdi, barkod, neden };

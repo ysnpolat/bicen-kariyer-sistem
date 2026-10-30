@@ -21,7 +21,9 @@ import {
   Drawer,
   Image,
   Input,
+  Modal,
   Popconfirm,
+  Select,
   Space,
   Spin,
   Timeline,
@@ -34,6 +36,7 @@ import {
   Clock3,
   Download,
   Lightbulb,
+  Plus,
   RefreshCw,
   Search,
   Squirrel,
@@ -106,6 +109,7 @@ const gorselAdresi = (id: number) =>
 /* ========================================================================== */
 
 export default function KazanKazan({ sekme: ilk = "oneri" }: { sekme?: "oneri" | "havuz" }) {
+  const [panelOneriAcik, setPanelOneriAcik] = useState(false);
   const [sekme, setSekme] = useState<"oneri" | "havuz">(ilk);
 
   return (
@@ -284,10 +288,22 @@ function Oneriler() {
           <Tooltip title="Yenile">
             <Button icon={<RefreshCw size={15} />} onClick={getir} />
           </Tooltip>
+          <Tooltip title="Mobilden gönderemeyen personelin önerisini onun adına girin">
+            <Button icon={<Plus size={15} />} onClick={() => setPanelOneriAcik(true)}>
+              Personel adına öneri
+            </Button>
+          </Tooltip>
           <Button icon={<Download size={15} />} onClick={excel} disabled={satirlar.length === 0}>
             Excel
           </Button>
         </div>
+        <PanelOneri
+          acik={panelOneriAcik}
+          kapat={(yenile) => {
+            setPanelOneriAcik(false);
+            if (yenile) getir();
+          }}
+        />
       </div>
 
       {yukleniyor && liste.length === 0 ? (
@@ -658,5 +674,118 @@ function OneriAyrintisi({
         </>
       )}
     </Drawer>
+  );
+}
+
+/* ========================================================================== */
+/* Personel adına öneri (30.10.2026)                                          */
+/* ========================================================================== */
+
+/**
+ * Mobil 1.9'da görsel seçilemediği için öneri gönderilemiyordu; İK öneriyi
+ * personel adına buradan girer. Aynı denetimler sunucuda (barkod, son 1 ay,
+ * bizde var mı / 400 gün) uygulanır. Görsel isteğe bağlı.
+ */
+function PanelOneri({ acik, kapat }: { acik: boolean; kapat: (yenile: boolean) => void }) {
+  const { message } = AntdApp.useApp();
+  const [personeller, setPersoneller] = useState<any[]>([]);
+  const [sicil, setSicil] = useState<string | undefined>();
+  const [urunAdi, setUrunAdi] = useState("");
+  const [barkod, setBarkod] = useState("");
+  const [neden, setNeden] = useState("");
+  const [dosya, setDosya] = useState<File | null>(null);
+  const [gonderiliyor, setGonderiliyor] = useState(false);
+
+  useEffect(() => {
+    if (!acik || personeller.length > 0) return;
+    api
+      .al<{ personeller: any[] }>("/api/Personel?durum=calisan")
+      .then((c) => setPersoneller(c?.personeller ?? []))
+      .catch(() => setPersoneller([]));
+  }, [acik, personeller.length]);
+
+  const temizle = () => {
+    setSicil(undefined);
+    setUrunAdi("");
+    setBarkod("");
+    setNeden("");
+    setDosya(null);
+  };
+
+  const gonder = async () => {
+    if (!sicil) return message.warning("Personeli seçiniz.");
+    if (urunAdi.trim().length < 2) return message.warning("Ürün adını yazınız.");
+    if (barkod.replace(/\D/g, "").length < 8) return message.warning("Barkodu yazınız.");
+    if (neden.trim().length < 10) return message.warning("Neden kısmına en az 10 karakter yazınız.");
+
+    const form = new FormData();
+    form.append("sicil", sicil);
+    form.append("urunAdi", urunAdi.trim());
+    form.append("barkod", barkod.replace(/\D/g, ""));
+    form.append("neden", neden.trim());
+    if (dosya) form.append("dosya", dosya);
+
+    setGonderiliyor(true);
+    try {
+      const s = await api.dosyaGonder<{ id: number }>("/api/KazanKazan/PanelOneri", form);
+      message.success(`Öneri kaydedildi (#${s.id}).`);
+      temizle();
+      kapat(true);
+    } catch (h: any) {
+      message.error(h?.message ?? "Kaydedilemedi.");
+    } finally {
+      setGonderiliyor(false);
+    }
+  };
+
+  return (
+    <Modal
+      open={acik}
+      title="Personel adına yeni ürün önerisi"
+      onCancel={() => kapat(false)}
+      onOk={gonder}
+      okText="Kaydet"
+      cancelText="Vazgeç"
+      confirmLoading={gonderiliyor}
+      destroyOnClose
+    >
+      <Space direction="vertical" style={{ width: "100%" }} size={10}>
+        <Select
+          showSearch
+          placeholder="Personel (ad, sicil ya da şube ile arayın)"
+          value={sicil}
+          onChange={setSicil}
+          optionFilterProp="label"
+          style={{ width: "100%" }}
+          options={personeller.map((p) => ({
+            value: p.personelKodu,
+            label: `${`${p.ad ?? ""} ${p.soyad ?? ""}`.trim()} · ${p.personelKodu}${p.sube ? ` · ${p.sube}` : ""}`,
+          }))}
+        />
+        <Input placeholder="Barkod" value={barkod} onChange={(e) => setBarkod(e.target.value)} inputMode="numeric" />
+        <Input placeholder="Ürün adı (marka, ürün, gramaj)" value={urunAdi} onChange={(e) => setUrunAdi(e.target.value)} maxLength={150} />
+        <Input.TextArea
+          placeholder="Neden raflarımızda bu ürün bulunmalı?"
+          value={neden}
+          onChange={(e) => setNeden(e.target.value)}
+          autoSize={{ minRows: 3, maxRows: 6 }}
+          maxLength={1000}
+          showCount
+        />
+        <div>
+          <input
+            type="file"
+            accept="image/*,application/pdf,video/mp4,video/quicktime"
+            onChange={(e) => setDosya(e.target.files?.[0] ?? null)}
+          />
+          <div style={{ fontSize: 12, color: "#8a929b", marginTop: 4 }}>Görsel isteğe bağlı.</div>
+        </div>
+        <Alert
+          type="info"
+          showIcon
+          message="Öneri seçilen personel adına kaydedilir; ödül de ona yazılır. Barkod, son 1 ay ve 400 gün kuralları aynen uygulanır."
+        />
+      </Space>
+    </Modal>
   );
 }
