@@ -548,6 +548,8 @@ export default function FiyatKontrol() {
 
             <SktKutu skt={sonuc.skt} />
 
+            <UrunDurumu p={sonuc.pusula} />
+
             <TouchableOpacity style={s.ekleDugme} onPress={listeyeEkle}>
               <Text style={s.ekleYazi}>
                 {liste.some((x) => x.barkod === u.barkod)
@@ -1037,4 +1039,75 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
   },
+});
+
+/* ------------------------------------------------------------------ */
+/* Ürün durumu (30.10.2026): Pusula'dan şubenin satırı                 */
+/* ------------------------------------------------------------------ */
+
+const DURUM_RENGI = {
+  DS: ["#e8f1fb", "#1f4f82"],
+  SS: ["#fff3e5", "#b45309"],
+  YS: ["#fdecec", "#b42318"],
+  MK: ["#f3ecfb", "#6b3fa0"],
+  ÜS: ["#fff8e1", "#8a6d00"],
+  ÜY: ["#fff8e1", "#8a6d00"],
+};
+
+const sayiYaz = (v, ondalik = 0) =>
+  v === null || v === undefined ? "—" : Number(v).toLocaleString("tr-TR", { maximumFractionDigits: ondalik });
+
+function UrunDurumu({ p }) {
+  if (!p) return null;
+  const [zemin, yazi] = DURUM_RENGI[p.sembol] ?? ["#f1f3ef", renk.metin];
+  const saat = p.hesapZamani
+    ? `${String(p.hesapZamani).slice(8, 10)}.${String(p.hesapZamani).slice(5, 7)} ${String(p.hesapZamani).slice(11, 16)}`
+    : "";
+
+  return (
+    <View style={ud.kutu}>
+      <View style={ud.ust}>
+        <Text style={ud.baslik}>Ürün durumu</Text>
+        {p.sembol ? (
+          <View style={[ud.hap, { backgroundColor: zemin }]}>
+            <Text style={[ud.hapYazi, { color: yazi }]}>
+              {p.durumAdi && p.durumAdi !== p.sembol ? `${p.sembol} · ${p.durumAdi}` : p.sembol}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={ud.satir}>
+        <View style={ud.hucre}>
+          <Text style={ud.etiket}>Sıra</Text>
+          <Text style={ud.deger}>{p.sira ? `#${sayiYaz(p.sira)}` : "—"}</Text>
+        </View>
+        <View style={ud.hucre}>
+          <Text style={ud.etiket}>21 gün satış</Text>
+          <Text style={ud.deger}>{sayiYaz(p.satis21, 1)}</Text>
+        </View>
+        <View style={ud.hucre}>
+          <Text style={ud.etiket}>Stok günü</Text>
+          <Text style={ud.deger}>{p.satisYok ? "Satış yok" : sayiYaz(p.sdg, 1)}</Text>
+        </View>
+      </View>
+
+      <Text style={ud.alt}>
+        {p.tip ? `${p.tip} · ` : ""}Pusula {saat}
+      </Text>
+    </View>
+  );
+}
+
+const ud = StyleSheet.create({
+  kutu: { marginTop: 12, borderWidth: 1, borderColor: "#e3e6e1", borderRadius: 12, padding: 12, backgroundColor: "#fbfcfa" },
+  ust: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 },
+  baslik: { fontSize: 13.5, fontWeight: "800", color: renk.metin },
+  hap: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10, flexShrink: 1 },
+  hapYazi: { fontSize: 12, fontWeight: "700" },
+  satir: { flexDirection: "row", gap: 8 },
+  hucre: { flex: 1 },
+  etiket: { fontSize: 11.5, color: renk.pasif },
+  deger: { fontSize: 15, fontWeight: "800", color: renk.metin, marginTop: 2 },
+  alt: { fontSize: 11.5, color: renk.pasif, marginTop: 8 },
 });

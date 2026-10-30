@@ -85,6 +85,8 @@ kurucu.Services.AddSingleton<MobilOturumDenetimi>();
 kurucu.Services.AddHostedService<RaporMerkeziGorevi>();
 /* 26.10.2026: SKT aylık planı kategori rotasyonuyla otomatik */
 kurucu.Services.AddHostedService<SktOtomatikPlanGorevi>();
+/* Pusula'nın biPortal kopyası (30.10.2026): Fiyat Kontrol'de ürün durumu */
+kurucu.Services.AddHostedService<PusulaYukleGorevi>();
 
 /* Künye sorgusu hmzYS servisine gidiyor; fabrika olmadan her istekte yeni
    HttpClient açmak soket tüketiyor. */

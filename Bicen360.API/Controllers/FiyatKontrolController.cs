@@ -547,6 +547,23 @@ WHERE stok_kodu = @stok ORDER BY kapak DESC, id",
         }
         var skt = _etiketKayit.SktDurumu((string)sube.subeAdi, (string)urun.stokKodu, etiket?.Skt ?? etiketKaydi?.Skt);
 
+        /* Ürün durumu (30.10.2026): Pusula'nın biPortal kopyasından şubenin
+           satırı — sıra, son 21 gün satış, stok devir günü, durum kodu.
+           Canlı Mikro'ya gitmez; kopya yoksa alan null. */
+        object pusula = null;
+        if (sube.depoNo is int pDepo)
+        {
+            try
+            {
+                using var pdb = _vt.Baglanti();
+                pusula = PusulaYukleGorevi.UrunDurumu(pdb, pDepo, (string)urun.stokKodu);
+            }
+            catch (Exception h)
+            {
+                _kayit.LogWarning(h, "Pusula ürün durumu okunamadı");
+            }
+        }
+
         return Ok(new
         {
             sube = new { sube.subeKodu, sube.subeAdi, sube.depoNo },
@@ -570,6 +587,7 @@ WHERE stok_kodu = @stok ORDER BY kapak DESC, id",
             /* 26.10.2026: etiket kaydı (değişen alanlar, yeni etiket) ve SKT */
             etiketKaydi = etiketDenetimi,
             skt,
+            pusula,
             gorselId,
             gorselAdresi = gorselId is null ? null : $"/api/FiyatKontrol/Gorsel/{gorselId}"
         });
